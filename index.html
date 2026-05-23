@@ -1,4 +1,3 @@
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif}
@@ -32,17 +31,26 @@ table.dt tr:hover td{background:rgba(45,106,159,.22)}
 .ic.in{border-left:3px solid #3498db}
 .it{font-size:13px;font-weight:500;color:#fff;margin-bottom:5px}
 .ib{font-size:12px;color:rgba(255,255,255,.62);line-height:1.7}
-.btnd{background:linear-gradient(135deg,#27ae60,#1a8045);border:none;border-radius:8px;color:#fff;padding:8px 18px;cursor:pointer;font-size:12.5px;font-weight:500}
+.btnd{background:linear-gradient(135deg,#27ae60,#1a8045);border:none;border-radius:8px;color:#fff;padding:8px 18px;cursor:pointer;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
 .btnd:disabled{opacity:.5;cursor:default}
-.btnr{background:rgba(255,255,255,.09);border:0.5px solid rgba(255,255,255,.18);border-radius:8px;color:rgba(255,255,255,.72);padding:8px 14px;cursor:pointer;font-size:12.5px}
+.btnd.alt{background:linear-gradient(135deg,#2d6a9f,#1c4a73)}
+.btnd.zip{background:linear-gradient(135deg,#e67e22,#b8651b)}
+.btnr{background:rgba(255,255,255,.09);border:0.5px solid rgba(255,255,255,.18);border-radius:8px;color:rgba(255,255,255,.72);padding:8px 14px;cursor:pointer;font-size:12.5px;display:inline-flex;align-items:center;gap:5px}
 .err{background:rgba(192,57,43,.2);border:0.5px solid #c0392b;border-radius:9px;padding:10px 15px;color:#e74c3c;font-size:12.5px;margin-top:10px;display:none}
+.multi-banner{background:linear-gradient(135deg,rgba(230,126,34,.18),rgba(243,156,18,.14));border:0.5px solid rgba(243,156,18,.45);border-radius:10px;padding:11px 15px;margin-bottom:12px;display:flex;align-items:center;gap:11px;font-size:12.5px;color:#fff}
+.multi-banner .badge{background:rgba(243,156,18,.25);border:0.5px solid rgba(243,156,18,.6);border-radius:6px;padding:3px 8px;font-size:10.5px;font-weight:500;color:#f39c12}
+.exp-row{display:flex;gap:8px;flex-wrap:wrap}
+.exp-row .btnd{flex:1;min-width:160px;justify-content:center}
+.suc-chip{display:inline-block;background:rgba(93,173,226,.15);border:0.5px solid rgba(93,173,226,.4);border-radius:5px;padding:1px 7px;font-size:10.5px;color:#5dade2;margin-left:5px;font-weight:500}
+.gen-status{font-size:11px;color:rgba(255,255,255,.58);margin-top:6px;display:none}
+.gen-status.show{display:block}
 </style>
 
 <div class="wrap">
   <div class="hdr">
     <div>
-      <div style="color:#fff;font-size:16px;font-weight:500"><i class="ti ti-chart-bar" style="color:#5dade2;margin-right:7px" aria-hidden="true"></i>Efectividad Inventario </div>
-      <div style="color:rgba(255,255,255,.42);font-size:11.5px;margin-top:2px">Informe completo en pestañas + descarga Excel con formato</div>
+      <div style="color:#fff;font-size:16px;font-weight:500"><i class="ti ti-chart-bar" style="color:#5dade2;margin-right:7px" aria-hidden="true"></i>Efectividad Inventario · Multi-Centro</div>
+      <div style="color:rgba(255,255,255,.42);font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP</div>
     </div>
     <div id="efBadge"></div>
   </div>
@@ -50,24 +58,45 @@ table.dt tr:hover td{background:rgba(45,106,159,.22)}
   <div id="upSection">
     <div class="dz" id="dz">
       <i class="ti ti-file-spreadsheet" style="font-size:42px;color:rgba(255,255,255,.3);display:block;margin-bottom:14px" aria-hidden="true"></i>
-      <div style="color:#fff;font-size:15px;font-weight:500;margin-bottom:6px">Arrastra el archivo  aquí</div>
-      <div style="color:rgba(255,255,255,.42);font-size:12.5px">o haz clic para seleccionar · .xlsx / .xls</div>
+      <div style="color:#fff;font-size:15px;font-weight:500;margin-bottom:6px">Arrastra el archivo aquí</div>
+      <div style="color:rgba(255,255,255,.42);font-size:12.5px">o haz clic para seleccionar · .xlsx / .xls · Acepta archivos con uno o varios centros</div>
     </div>
     <input type="file" id="fi" accept=".xlsx,.xls" style="display:none">
     <div class="err" id="errBox"></div>
   </div>
 
   <div id="resSection" style="display:none">
-    <div class="glass" style="padding:10px 15px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
-      <div style="color:rgba(255,255,255,.58);font-size:12px" id="fInfo"></div>
-      <div style="display:flex;gap:8px">
+
+    <div id="multiBanner" class="multi-banner" style="display:none">
+      <i class="ti ti-stack-2" style="color:#f39c12;font-size:22px" aria-hidden="true"></i>
+      <div style="flex:1">
+        <div style="font-weight:500;margin-bottom:2px">Archivo multi-centro detectado <span class="badge" id="multiCount"></span></div>
+        <div style="color:rgba(255,255,255,.6);font-size:11.5px">Se generarán automáticamente los 3 niveles de Excel y se descargarán en un ZIP.</div>
+      </div>
+      <button class="btnd zip" id="btnAllZip">
+        <i class="ti ti-file-zip" aria-hidden="true"></i>Generar todo (ZIP)
+      </button>
+    </div>
+
+    <div class="glass" style="padding:12px 15px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="color:rgba(255,255,255,.68);font-size:12.5px" id="fInfo"></div>
         <button class="btnr" id="btnReset">
-          <i class="ti ti-refresh" aria-hidden="true" style="margin-right:4px"></i>Cargar otro
-        </button>
-        <button class="btnd" id="btnDl">
-          <i class="ti ti-download" aria-hidden="true" style="margin-right:5px"></i>Descargar Excel
+          <i class="ti ti-refresh" aria-hidden="true"></i>Cargar otro
         </button>
       </div>
+      <div class="exp-row">
+        <button class="btnd" id="btnDl">
+          <i class="ti ti-download" aria-hidden="true"></i>Excel Global
+        </button>
+        <button class="btnd alt" id="btnPerCentro">
+          <i class="ti ti-building-warehouse" aria-hidden="true"></i>Excel por Sociedad
+        </button>
+        <button class="btnd zip" id="btnPerSuc">
+          <i class="ti ti-file-zip" aria-hidden="true"></i>ZIP por Sucursal
+        </button>
+      </div>
+      <div class="gen-status" id="genStatus"></div>
     </div>
 
     <div class="tabs">
@@ -86,8 +115,47 @@ table.dt tr:hover td{background:rgba(45,106,159,.22)}
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
-var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:''};
+
+// ── MAPEO DE SUCURSALES (desde suc.md) ──
+var SUC_MAP={
+'KB01':'KURODA BOMBAS','KB02':'KBO LOS MOCHIS','KB99':'KBO ADMINISTRATIVO',
+'KC00':'KURODA CEDIS','KC01':'KURODA BRAVO','KC02':'KURODA CALZADA','KC03':'KURODA PROYECTOS CULIACAN',
+'KC04':'KURODA PALMITO','KC05':'KURODA SANALONA','KC06':'KURODA GUAMUCHIL',
+'KC09':'KURODA PROYECTOS AGUASCALIENTES','KC13':'KURODA LOS MOCHIS','KC14':'KURODA OUTLET AEROPUERTO',
+'KC15':'KURODA TIANGUIS MOCHIS','KC16':'KURODA ECONOSALDOS CULIACAN','KC17':'KURODA GUASAVE',
+'KC18':'KURODA ZAPOPAN','KC20':'KURODA NAVOLATO','KC21':'KURODA CEDIS LA PRIMAVERA',
+'KC22':'KURODA HUERTAS','KC23':'KURODA PAPALOTE','KC24':'KURODA COSTA RICA',
+'KC25':'KURODA ECOMMERCE','KC26':'KURODA PROYECTOS MAZATLAN','KC99':'KSA ADMINISTRATIVO',
+'KN00':'KN 20 DE NOVIEMBRE','KN01':'KN EXPRESS','KN02':'KN ECOMMERCE','KN03':'KN PROYECTOS ENSENADA',
+'KN04':'KN ENSENADA MENUDEO','KN05':'KN MEXICALI MENUDEO','KN06':'KN PROYECTOS MEXICAL',
+'KN07':'KN PUERTO PEÑASCO','KN09':'KN MOSAIKOS','KN11':'KN PROYECTOS LOS CABOS',
+'KN12':'KN PLATAFORMAS DIGITALES','KN14':'KN PROYECTOS TIJUANA','KN15':'KN BOMBAS VDG',
+'KN16':'KN CEDIS TECATE','KN17':'KN ROSARITO','KN18':'KN PEDREGAL','KN19':'KN TECATE',
+'KN20':'KN SAN JOSE DEL CABO','KN21':'KN NOGALES','KN22':'KN TIANGUIS NOGALES','KN99':'KNO ADMINISTRATIVO',
+'KO01':'KURODA.COM','KO02':'MP MERCADO LIBRE','KO03':'MP AMAZON','KO04':'MP AMAZON CONSIGNACION','KO99':'KON ADMINISTRATIVO',
+'KS00':'KS MATRIZ HERMOSILLO','KS01':'KS PROYECTOS HERMOSILLO','KS02':'KS PLOMELEK PERIFÉRICO',
+'KS03':'KS TIANGUIS PERISUR','KS05':'KS TIANGUIS HERMOSILLO','KS07':'KS OBREGON','KS08':'KS NAVOJOA',
+'KS09':'KS MORELOS','KS10':'KS CEDIS PALO VERDE','KS11':'KS HUATABAMPO','KS14':'KS GUAYMAS',
+'KS15':'KS SAN LUCAS','KS16':'KS LOS CABOS','KS17':'KS TIANGUIS OBREGON','KS18':'KS ECOMMERCE',
+'KS20':'KS CEDIS HERMOSILLO','KS21':'KS PLOMELEK EXPRESS','KS99':'KSC ADMINISTRATIVO',
+'KT01':'KST PROYECTOS GUADAL','KT02':'KST AGUASCALIENTES','KT04':'KST PROYECTOS SILAO',
+'KT05':'KST PROYECTOS MONTERREY','KT06':'KST PROYECTOS QUERÉTARO','KT99':'KST ADMINISTRATIVO'
+};
+
+// Sociedades (prefijo) → nombre legible
+var SOC_MAP={
+'KB':'KURODA BOMBAS','KC':'KURODA SINALOA','KN':'KURODA BAJA CALIFORNIA',
+'KO':'KURODA ONLINE','KS':'KURODA SONORA','KT':'KST PROYECTOS FORÁNEOS'
+};
+
+function sucName(code){return SUC_MAP[code]||code||'—';}
+function socCode(code){return String(code||'').slice(0,2).toUpperCase();}
+function socName(code){return SOC_MAP[socCode(code)]||socCode(code)||'—';}
+
+// ── ESTADO GLOBAL ──
+var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centros:[],isMulti:false};
 
 (function init(){
   var dz=document.getElementById('dz');
@@ -97,7 +165,10 @@ var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:''};
   dz.addEventListener('click',function(){document.getElementById('fi').click();});
   document.getElementById('fi').addEventListener('change',function(e){if(e.target.files[0])pFile(e.target.files[0]);});
   document.getElementById('btnReset').addEventListener('click',resetAll);
-  document.getElementById('btnDl').addEventListener('click',dlExcel);
+  document.getElementById('btnDl').addEventListener('click',function(){runGen('global');});
+  document.getElementById('btnPerCentro').addEventListener('click',function(){runGen('soc');});
+  document.getElementById('btnPerSuc').addEventListener('click',function(){runGen('suc');});
+  document.getElementById('btnAllZip').addEventListener('click',function(){runGen('all');});
   [0,1,2,3].forEach(function(i){
     document.getElementById('t'+i).addEventListener('click',function(){switchTab(i);});
   });
@@ -118,8 +189,21 @@ function pFile(file){
       var rows=aoa.slice(1).filter(function(r){return r.some(function(v){return v!=='';});}).map(function(r){
         var o={};hdrs.forEach(function(h,i){o[h]=r[i]!==undefined?r[i]:'';});return o;
       });
+      // Enriquecer cada renglón con Nombre Sucursal (desde suc.md)
+      rows.forEach(function(r){
+        r['Nombre Sucursal']=sucName(String(r['Centro']||''));
+        r['Sociedad']=socName(r['Centro']);
+      });
+      // Insertar columnas nuevas en hdrs si no existen, justo después de "Centro"
+      if(hdrs.indexOf('Nombre Sucursal')<0){
+        var ci=hdrs.indexOf('Centro');
+        if(ci>=0)hdrs.splice(ci+1,0,'Nombre Sucursal','Sociedad');
+        else hdrs.unshift('Nombre Sucursal','Sociedad');
+      }
       G.hdrs=hdrs;G.rows=rows;G.file=file.name;
-      G.centro=String(rows[0]&&rows[0]['Centro']?rows[0]['Centro']:'KC14');
+      G.centros=Array.from(new Set(rows.map(function(r){return String(r['Centro']||'');}))).filter(Boolean).sort();
+      G.isMulti=G.centros.length>1;
+      G.centro=G.centros[0]||'GK';
       G.suc=String(rows[0]&&rows[0]['Almacen']?rows[0]['Almacen']:'BODE');
       G.pg=0;G.q='';
       G.m=calcM(rows);
@@ -155,9 +239,23 @@ function renderAll(){
   var m=G.m;
   document.getElementById('upSection').style.display='none';
   document.getElementById('resSection').style.display='block';
-  document.getElementById('fInfo').innerHTML='<i class="ti ti-file" aria-hidden="true" style="margin-right:5px"></i>'+G.file+' &middot; '+m.nC+' renglones &middot; '+G.centro+' / '+G.suc;
+
+  // Banner multi-centro
+  var banner=document.getElementById('multiBanner');
+  if(G.isMulti){
+    banner.style.display='flex';
+    document.getElementById('multiCount').textContent=G.centros.length+' centros';
+  }else{
+    banner.style.display='none';
+  }
+
+  var infoExtra=G.isMulti
+    ?G.centros.length+' centros · '+G.centros.slice(0,3).map(function(c){return c+' ('+sucName(c).slice(0,18)+')';}).join(', ')+(G.centros.length>3?'…':'')
+    :G.centro+' — '+sucName(G.centro)+' / Almacén '+G.suc;
+  document.getElementById('fInfo').innerHTML='<i class="ti ti-file" aria-hidden="true" style="margin-right:5px"></i><b>'+esc(G.file)+'</b> &middot; '+m.nC+' renglones &middot; '+infoExtra;
+
   var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#f39c12':'#2ecc71';
-  document.getElementById('efBadge').innerHTML='<div style="background:'+ec+'18;border:0.5px solid '+ec+'50;border-radius:10px;padding:7px 16px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,.48);margin-bottom:1px">EFECTIVIDAD</div><div style="font-size:24px;font-weight:500;color:'+ec+'">'+pct(m.efec)+'</div></div>';
+  document.getElementById('efBadge').innerHTML='<div style="background:'+ec+'18;border:0.5px solid '+ec+'50;border-radius:10px;padding:7px 16px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,.48);margin-bottom:1px">EFECTIVIDAD '+(G.isMulti?'GLOBAL':'')+'</div><div style="font-size:24px;font-weight:500;color:'+ec+'">'+pct(m.efec)+'</div></div>';
   rFuente();rTablas();rGrupos();rInsights();
 }
 
@@ -169,19 +267,26 @@ function switchTab(idx){
 }
 
 function resetAll(){
-  G={rows:[],hdrs:[],m:{},file:'',centro:'KC14',suc:'BODE',pg:0,ps:25,q:''};
+  G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centros:[],isMulti:false};
   document.getElementById('upSection').style.display='block';
   document.getElementById('resSection').style.display='none';
   document.getElementById('efBadge').innerHTML='';
   document.getElementById('fi').value='';
+  document.getElementById('genStatus').classList.remove('show');
   switchTab(0);
+}
+
+function setStatus(txt){
+  var s=document.getElementById('genStatus');
+  if(!txt){s.classList.remove('show');return;}
+  s.textContent=txt;s.classList.add('show');
 }
 
 // ── FUENTE TAB ──
 function rFuente(){
   var NC=new Set(['Existencia Teorica','Cantidad Contada','Diferencia en Cantidad','Existencia Resguardo','Valor de la Existencia Teorica','Valor de la Cantidad Contada','Diferencia en Valores','Importe Diferencia PV Men con IVA','Precio de Venta Menudeo con IVA']);
   var DC=new Set(['Diferencia en Cantidad','Diferencia en Valores','Importe Diferencia PV Men con IVA']);
-  var SHOWN=['Documento de Inventario','Numero de Renglon','Fecha del Documento','Centro','Almacen','Descrip Gpo Materiales','Codigo de Material','Descripcion del Material','Existencia Teorica','Cantidad Contada','Diferencia en Cantidad','Valor de la Existencia Teorica','Valor de la Cantidad Contada','Diferencia en Valores','Descrip Motivo de Diferencia'];
+  var SHOWN=['Documento de Inventario','Numero de Renglon','Fecha del Documento','Centro','Nombre Sucursal','Sociedad','Almacen','Descrip Gpo Materiales','Codigo de Material','Descripcion del Material','Existencia Teorica','Cantidad Contada','Diferencia en Cantidad','Valor de la Existencia Teorica','Valor de la Cantidad Contada','Diferencia en Valores','Descrip Motivo de Diferencia'];
 
   function render(){
     var q=(G.q||'').toLowerCase();
@@ -237,8 +342,10 @@ function rTablas(){
   var totDV=ms.reduce(function(a,e){return a+e[1].dv;},0);
   var totIP=ms.reduce(function(a,e){return a+e[1].ip;},0);
 
+  var titleLabel=G.isMulti?'CONSOLIDADO ('+G.centros.length+' centros)':G.centro+' — '+sucName(G.centro)+' · '+G.suc;
+
   var left='<div style="background:rgba(13,33,55,.85);border-radius:9px 9px 0 0;padding:11px 15px;text-align:center;border:0.5px solid rgba(255,255,255,.1)">'
-    +'<div style="color:rgba(255,255,255,.45);font-size:10.5px;text-transform:uppercase;letter-spacing:1px">'+G.centro+' — '+G.suc+'</div>'
+    +'<div style="color:rgba(255,255,255,.45);font-size:10.5px;text-transform:uppercase;letter-spacing:1px">'+esc(titleLabel)+'</div>'
     +'<div style="color:#fff;font-size:14px;font-weight:500;margin-top:2px">EFECTIVIDAD DE INVENTARIO</div></div>'
     +'<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-top:none;border-radius:0 0 9px 9px;padding:12px 15px;margin-bottom:12px">'
     +[['Total de piezas contadas',fNum(m.cnt,3),'rgba(255,255,255,.85)'],
@@ -261,13 +368,42 @@ function rTablas(){
       ['Diferencia Neta',money(m.vDiff),negC(m.vDiff)],
     ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')+'</div>';
 
+  // Mini desglose por centro si es multi
+  var perCentroBlock='';
+  if(G.isMulti){
+    var perC=G.centros.map(function(c){
+      var sub=G.rows.filter(function(r){return String(r['Centro'])===c;});
+      var mm=calcM(sub);
+      return {centro:c,nC:mm.nC,efec:mm.efec,vDiff:mm.vDiff};
+    });
+    perCentroBlock='<div class="glass" style="padding:14px;margin-bottom:12px">'
+      +'<div class="sec"><i class="ti ti-building" aria-hidden="true" style="margin-right:5px"></i>Resumen por Sucursal</div>'
+      +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">'
+      +'<thead><tr>'
+      +['Centro','Sucursal','Renglones','Efectividad','Dif. Valor'].map(function(h,i){
+        return '<th style="background:#1e3a5f;color:#fff;padding:6px 9px;text-align:'+(i<2?'left':'right')+';font-size:10.5px;font-weight:500">'+h+'</th>';
+      }).join('')+'</tr></thead><tbody>'
+      +perC.map(function(p,i){
+        var bg=i%2===0?'rgba(255,255,255,.02)':'transparent';
+        var ce=p.efec<0.5?'#e74c3c':p.efec<0.8?'#f39c12':'#2ecc71';
+        return '<tr style="background:'+bg+'">'
+          +'<td style="padding:5px 9px;color:#fff;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,.05)">'+esc(p.centro)+'</td>'
+          +'<td style="padding:5px 9px;color:rgba(255,255,255,.72);border-bottom:0.5px solid rgba(255,255,255,.05)">'+esc(sucName(p.centro))+'</td>'
+          +'<td style="padding:5px 9px;color:rgba(255,255,255,.65);text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+p.nC+'</td>'
+          +'<td style="padding:5px 9px;color:'+ce+';font-weight:500;text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+pct(p.efec)+'</td>'
+          +'<td style="padding:5px 9px;color:'+negC(p.vDiff)+';font-weight:500;text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+money(p.vDiff)+'</td></tr>';
+      }).join('')
+      +'</tbody></table></div></div>';
+  }
+
   var right='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
     +'<div style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center">'
-    +'<div style="color:rgba(255,255,255,.4);font-size:10.5px">CENTRO</div>'
-    +'<div style="color:#fff;font-size:14px;font-weight:500">'+G.centro+'</div></div>'
+    +'<div style="color:rgba(255,255,255,.4);font-size:10.5px">CENTRO'+(G.isMulti?'S':'')+'</div>'
+    +'<div style="color:#fff;font-size:14px;font-weight:500">'+(G.isMulti?G.centros.length:G.centro)+'</div></div>'
     +'<div style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center">'
     +'<div style="color:rgba(255,255,255,.4);font-size:10.5px">SUCURSAL</div>'
-    +'<div style="color:#fff;font-size:14px;font-weight:500">'+G.suc+'</div></div></div>'
+    +'<div style="color:#fff;font-size:13px;font-weight:500">'+(G.isMulti?'Multi':sucName(G.centro))+'</div></div></div>'
+    +perCentroBlock
     +'<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-radius:9px;overflow:hidden">'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr>'
@@ -356,7 +492,7 @@ function rInsights(){
   document.getElementById('p3').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
     +'<div>'
     +'<div class="ic '+efSt+'">'
-    +'<div class="it"><i class="ti ti-target" aria-hidden="true" style="margin-right:6px;color:'+ec+'"></i>Efectividad General</div>'
+    +'<div class="it"><i class="ti ti-target" aria-hidden="true" style="margin-right:6px;color:'+ec+'"></i>Efectividad '+(G.isMulti?'Global':'General')+'</div>'
     +'<div style="font-size:34px;font-weight:500;color:'+ec+';margin:8px 0">'+pct(m.efec)+'</div>'
     +'<div class="ib"><b>Fórmula:</b> (Teórico − Faltantes − Sobrantes) / Teórico<br>'
     +'= ('+fNum(m.teo,3)+' − '+fNum(m.falt,3)+' − '+fNum(m.sobr,3)+') / '+fNum(m.teo,3)+'<br>'
@@ -390,22 +526,9 @@ function rInsights(){
     +'</ul></div></div></div></div>';
 }
 
-// ── EXCEL DOWNLOAD con ExcelJS ──
-function dlExcel(){
-  var btn=document.getElementById('btnDl');
-  btn.textContent='Generando…';btn.disabled=true;
-  setTimeout(function(){
-    buildXl().then(function(){
-      btn.innerHTML='<i class="ti ti-download" aria-hidden="true" style="margin-right:5px"></i>Descargar Excel';
-      btn.disabled=false;
-    }).catch(function(e){
-      alert('Error: '+e.message);
-      btn.innerHTML='<i class="ti ti-download" aria-hidden="true" style="margin-right:5px"></i>Descargar Excel';
-      btn.disabled=false;
-    });
-  },50);
-}
-
+// ═══════════════════════════════════════════════════════
+// ── HELPERS ExcelJS (estilo de celda) ──
+// ═══════════════════════════════════════════════════════
 function sc(cell,bg,fc,bold,numFmt,ha){
   cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:bg||'FFFFFFFF'}};
   cell.font={bold:!!bold,color:{argb:fc||'FF1A252F'},name:'Arial',size:10};
@@ -414,33 +537,35 @@ function sc(cell,bg,fc,bold,numFmt,ha){
   if(numFmt)cell.numFmt=numFmt;
 }
 
-async function buildXl(){
-  var m=G.m;
-  var wb=new ExcelJS.Workbook();
-  wb.creator='KC14 Dashboard';wb.created=new Date();
+// Genera 4 hojas (FUENTE/TABLAS/GRUPOS/INSIGHTS) en wb, con sufijos para nombres únicos
+function buildContextSheets(wb,ctx){
+  var rows=ctx.rows,m=ctx.m,hdrs=G.hdrs;
+  var sufijo=ctx.sufijo||'';
+  var labelTitulo=ctx.labelTitulo||(ctx.centro+' — '+sucName(ctx.centro));
 
   // ── FUENTE ──
-  var wsF=wb.addWorksheet('FUENTE',{views:[{state:'frozen',ySplit:1}]});
+  var nameF=('FUENTE'+(sufijo?' '+sufijo:'')).slice(0,31);
+  var wsF=wb.addWorksheet(nameF,{views:[{state:'frozen',ySplit:1}]});
   var NC=new Set(['Existencia Teorica','Cantidad Contada','Diferencia en Cantidad','Existencia Resguardo','Valor de la Existencia Teorica','Valor de la Cantidad Contada','Diferencia en Valores','Importe Diferencia PV Men con IVA','Precio de Venta Menudeo con IVA']);
   var DC=new Set(['Diferencia en Cantidad','Diferencia en Valores','Importe Diferencia PV Men con IVA']);
-  var CW={'Documento de Inventario':20,'Numero de Renglon':11,'Fecha del Documento':14,'Centro':7,'Almacen':9,'Descrip Gpo Materiales':22,'Nombre del Proveedor':28,'Codigo de Material':18,'Descripcion del Material':42,'Existencia Resguardo':13,'Lote':11,'Existencia Teorica':14,'Cantidad Contada':13,'Diferencia en Cantidad':14,'Unidad de Medida Base':11,'Valor de la Existencia Teorica':18,'Valor de la Cantidad Contada':16,'Diferencia en Valores':14,'Precio de Venta Menudeo con IVA':16,'Importe Diferencia PV Men con IVA':20,'Motivo de Diferencia':12,'Descrip Motivo de Diferencia':22,'Numero de Inventario':17,'Status Aplicado':11,'Status Contado':11};
-  wsF.columns=G.hdrs.map(function(h){return{header:h,key:h,width:CW[h]||14};});
+  var CW={'Documento de Inventario':20,'Numero de Renglon':11,'Fecha del Documento':14,'Centro':7,'Nombre Sucursal':30,'Sociedad':22,'Almacen':9,'Descrip Gpo Materiales':22,'Nombre del Proveedor':28,'Codigo de Material':18,'Descripcion del Material':42,'Existencia Resguardo':13,'Lote':11,'Existencia Teorica':14,'Cantidad Contada':13,'Diferencia en Cantidad':14,'Unidad de Medida Base':11,'Valor de la Existencia Teorica':18,'Valor de la Cantidad Contada':16,'Diferencia en Valores':14,'Precio de Venta Menudeo con IVA':16,'Importe Diferencia PV Men con IVA':20,'Motivo de Diferencia':12,'Descrip Motivo de Diferencia':22,'Numero de Inventario':17,'Status Aplicado':11,'Status Contado':11};
+  wsF.columns=hdrs.map(function(h){return{header:h,key:h,width:CW[h]||14};});
   var hRow=wsF.getRow(1);
   hRow.height=26;
-  G.hdrs.forEach(function(h,i){
+  hdrs.forEach(function(h,i){
     var c=hRow.getCell(i+1);
     c.value=h;
     sc(c,'FF1E3A5F','FFFFFFFF',true,null,'center');
     c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
   });
-  wsF.autoFilter={from:{row:1,column:1},to:{row:1,column:G.hdrs.length}};
+  wsF.autoFilter={from:{row:1,column:1},to:{row:1,column:hdrs.length}};
 
-  G.rows.forEach(function(row,ri){
+  rows.forEach(function(row,ri){
     var alt=ri%2===1;
-    var vals=G.hdrs.map(function(h){return NC.has(h)?(isNaN(+row[h])?row[h]:+row[h]):(row[h]!==undefined?row[h]:'');});
+    var vals=hdrs.map(function(h){return NC.has(h)?(isNaN(+row[h])?row[h]:+row[h]):(row[h]!==undefined?row[h]:'');});
     var dr=wsF.addRow(vals);
     dr.height=15;
-    G.hdrs.forEach(function(h,ci){
+    hdrs.forEach(function(h,ci){
       var cell=dr.getCell(ci+1),val=+row[h];
       var neg=DC.has(h)&&val<0,pos=(h==='Diferencia en Cantidad'||h==='Diferencia en Valores')&&val>0;
       var bg=neg?'FFFFEAEA':pos?'FFEAFFEA':alt?'FFEBF4FF':'FFFFFFFF';
@@ -450,7 +575,8 @@ async function buildXl(){
   });
 
   // ── TABLAS ──
-  var wsT=wb.addWorksheet('TABLAS');
+  var nameT=('TABLAS'+(sufijo?' '+sufijo:'')).slice(0,31);
+  var wsT=wb.addWorksheet(nameT);
   wsT.columns=[{width:32},{width:5},{width:18},{width:3},{width:36},{width:20},{width:28}];
 
   function addTitle(text,bg,fc,sz){
@@ -466,7 +592,7 @@ async function buildXl(){
     return r;
   }
 
-  addTitle(G.centro+' — '+G.suc,'FF0D2137','FFFFFFFF',13);
+  addTitle(labelTitulo,'FF0D2137','FFFFFFFF',13);
   addTitle('EFECTIVIDAD DE INVENTARIO','FF0D2137','FFADD8F5',11);
   wsT.addRow([]);
 
@@ -500,14 +626,14 @@ async function buildXl(){
   addKpi('Valor Exist Teórica',m.vTeo,'FFF0F7FF','FF1A252F','"$"#,##0.00');
   addKpi('Diferencia Neta',m.vDiff,m.vDiff<0?'FFF8D7DA':'FFD4EDDA',m.vDiff<0?'FFC0392B':'FF1E8449','"$"#,##0.00');
 
-  // Motivos (col E-G) starting row 4
+  // Encabezado lateral: Centro / Sucursal
   var mr=4;
   function gcell(r,c){return wsT.getRow(r).getCell(c);}
   sc(gcell(mr,5),'FF2D6A9F','FFFFFFFF',true,null,'center');gcell(mr,5).value='CENTRO';
   sc(gcell(mr,6),'FF2D6A9F','FFFFFFFF',true,null,'center');gcell(mr,6).value='SUCURSAL';
   mr++;
-  sc(gcell(mr,5),'FFEBF4FF','FF1A252F',true,null,'center');gcell(mr,5).value=G.centro;
-  sc(gcell(mr,6),'FFEBF4FF','FF1A252F',true,null,'center');gcell(mr,6).value=G.suc;
+  sc(gcell(mr,5),'FFEBF4FF','FF1A252F',true,null,'center');gcell(mr,5).value=ctx.centro||'(varios)';
+  sc(gcell(mr,6),'FFEBF4FF','FF1A252F',true,null,'center');gcell(mr,6).value=ctx.centro?sucName(ctx.centro):'(varias)';
   mr++;mr++;
   sc(gcell(mr,5),'FF1E3A5F','FFFFFFFF',true,null,'left');gcell(mr,5).value='Motivo de Diferencia';
   sc(gcell(mr,6),'FF1E3A5F','FFFFFFFF',true,null,'right');gcell(mr,6).value='Dif. en Valores';
@@ -528,7 +654,8 @@ async function buildXl(){
   sc(gcell(mr,7),totIP<0?'FFF8D7DA':'FFD4EDDA',totIP<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,7).value=totIP;
 
   // ── GRUPOS ──
-  var wsG=wb.addWorksheet('GRUPOS');
+  var nameG=('GRUPOS'+(sufijo?' '+sufijo:'')).slice(0,31);
+  var wsG=wb.addWorksheet(nameG);
   wsG.columns=[{width:30},{width:18},{width:3},{width:30},{width:18},{width:3},{width:15},{width:15},{width:15},{width:3},{width:14},{width:18}];
   var ghdr=wsG.addRow(['GRUPO DE MATERIALES','IMPORTE','','GRUPO DE MATERIALES','IMPORTE','','VAL. CONTADO','VAL. TEÓRICO','RESULTADO','','CONCEPTO','IMPORTE']);
   ghdr.height=24;
@@ -569,7 +696,8 @@ async function buildXl(){
   sc(gt3.getCell(12),m.vDiff<0?'FFF8D7DA':'FFD4EDDA',m.vDiff<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gt3.getCell(12).value=m.vDiff;
 
   // ── INSIGHTS ──
-  var wsI=wb.addWorksheet('INSIGHTS');
+  var nameI=('INSIGHTS'+(sufijo?' '+sufijo:'')).slice(0,31);
+  var wsI=wb.addWorksheet(nameI);
   wsI.columns=[{width:85},{width:5},{width:5},{width:5},{width:5}];
   function iTitle(txt,bg,fc,sz){
     var r=wsI.addRow([txt]);wsI.mergeCells('A'+r.number+':E'+r.number);r.height=sz>12?30:22;
@@ -582,8 +710,8 @@ async function buildXl(){
     r.getCell(1).font={bold:false,color:{argb:'FF1A252F'},name:'Arial',size:10};
   }
 
-  iTitle('INSIGHTS — PUNTOS CRÍTICOS DEL INVENTARIO '+G.centro,'FF0D2137','FFFFFFFF',14);
-  iTitle('Centro: '+G.centro+' | Sucursal: '+G.suc+' | Efectividad: '+pct(m.efec)+' | Correctas: '+fNum(m.corr,3)+' / '+fNum(m.teo,3),m.efec<0.5?'FFF8D7DA':'FFFFF3CD','FF1A252F',11);
+  iTitle('INSIGHTS — '+labelTitulo,'FF0D2137','FFFFFFFF',14);
+  iTitle('Efectividad: '+pct(m.efec)+' | Correctas: '+fNum(m.corr,3)+' / '+fNum(m.teo,3),m.efec<0.5?'FFF8D7DA':'FFFFF3CD','FF1A252F',11);
   wsI.addRow([]);
   iTitle('1. EFECTIVIDAD GENERAL','FF2D6A9F','FFFFFFFF',11);
   iBody('Formula: Piezas Correctas / Total Teorico = (Teorico - Faltantes - Sobrantes) / Teorico','FFEBF4FF');
@@ -606,19 +734,264 @@ async function buildXl(){
   wsI.addRow([]);
   iTitle('6. MOTIVOS DE DIFERENCIA (POR IMPACTO)','FF2D6A9F','FFFFFFFF',11);
   Object.entries(m.mots).sort(function(a,b){return a[1].dv-b[1].dv;}).forEach(function(e){iBody('• '+e[0]+': '+money(e[1].dv)+' en valores | '+money(e[1].ip)+' PV c/IVA',e[1].dv<0?'FFFFEAEA':'FFEAFFEA');});
-  wsI.addRow([]);
-  iTitle('7. RECOMENDACIONES','FF2D6A9F','FFFFFFFF',11);
-  ['Validar movimientos "Un codigo por otro" — son los mas frecuentes. Revisar asignacion SAP.',
-   'Grupos prioritarios: '+Object.entries(m.grps).filter(function(e){return e[1].dv<0;}).sort(function(a,b){return a[1].dv-b[1].dv;}).slice(0,3).map(function(e){return e[0];}).join(', ')+'.',
-   m.nF>m.nS?'Predominan FALTANTES — reforzar seguridad y registro de salidas.':'Predominan SOBRANTES — verificar ubicaciones y lotes duplicados.',
-   'Adhesivos ceramicos y boquillas: multiples lotes mismo codigo — revisar codificacion por lote.',
-   'Pisos y Plomeria Cromada: mayor impacto en valor — priorizar siguiente ciclo de inventario.',
-  ].forEach(function(t){iBody('• '+t,'FFEBF4FF');});
+}
 
-  var buf=await wb.xlsx.writeBuffer();
-  var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+// Hoja de RESUMEN consolidado por Centro (sólo para Excel global multi-centro)
+function buildResumenHoja(wb,filas){
+  var ws=wb.addWorksheet('RESUMEN POR CENTRO',{views:[{state:'frozen',ySplit:2}]});
+  ws.columns=[{width:9},{width:36},{width:24},{width:11},{width:16},{width:14},{width:14},{width:14},{width:16},{width:14},{width:16}];
+
+  var tit=ws.addRow(['RESUMEN POR CENTRO — '+G.file]);
+  ws.mergeCells('A1:K1');tit.height=28;
+  sc(tit.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
+  tit.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},name:'Arial',size:14};
+
+  var hdr=ws.addRow(['CENTRO','SUCURSAL','SOCIEDAD','RENGLONES','EFECTIVIDAD','TEÓRICO (pz)','CONTADO (pz)','FALTANTES','SOBRANTES','VAL TEÓRICO','DIF NETA $']);
+  hdr.height=24;
+  for(var c=1;c<=11;c++){sc(hdr.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
+
+  filas.forEach(function(f,i){
+    var alt=i%2===1;var bg=alt?'FFF0F7FF':'FFFFFFFF';
+    var r=ws.addRow([f.centro,sucName(f.centro),socName(f.centro),f.m.nC,f.m.efec,f.m.teo,f.m.cnt,f.m.falt,f.m.sobr,f.m.vTeo,f.m.vDiff]);
+    r.height=18;
+    sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
+    sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
+    sc(r.getCell(3),bg,'FF1A252F',false,null,'left');
+    sc(r.getCell(4),bg,'FF1A252F',false,'#,##0','right');
+    var efBg=f.m.efec<0.5?'FFF8D7DA':f.m.efec<0.8?'FFFFF3CD':'FFD4EDDA';
+    var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
+    sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
+    sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
+    sc(r.getCell(7),bg,'FF1A252F',false,'#,##0.000','right');
+    sc(r.getCell(8),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
+    sc(r.getCell(9),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
+    sc(r.getCell(10),bg,'FF1A252F',false,'"$"#,##0.00','right');
+    sc(r.getCell(11),f.m.vDiff<0?'FFF8D7DA':'FFD4EDDA',f.m.vDiff<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');
+  });
+
+  // Fila TOTAL
+  var totM=G.m;
+  var tr=ws.addRow(['TOTAL','('+filas.length+' centros)','—',totM.nC,totM.efec,totM.teo,totM.cnt,totM.falt,totM.sobr,totM.vTeo,totM.vDiff]);
+  tr.height=22;
+  sc(tr.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
+  sc(tr.getCell(2),'FF0D2137','FFFFFFFF',true,null,'left');
+  sc(tr.getCell(3),'FF0D2137','FFFFFFFF',true,null,'left');
+  sc(tr.getCell(4),'FF0D2137','FFFFFFFF',true,'#,##0','right');
+  var efTBg=totM.efec<0.5?'FFC0392B':totM.efec<0.8?'FFAD6B00':'FF1E8449';
+  sc(tr.getCell(5),efTBg,'FFFFFFFF',true,'0.00%','right');
+  sc(tr.getCell(6),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
+  sc(tr.getCell(7),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
+  sc(tr.getCell(8),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
+  sc(tr.getCell(9),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
+  sc(tr.getCell(10),'FF0D2137','FFFFFFFF',true,'"$"#,##0.00','right');
+  sc(tr.getCell(11),totM.vDiff<0?'FFC0392B':'FF1E8449','FFFFFFFF',true,'"$"#,##0.00','right');
+
+  ws.autoFilter={from:{row:2,column:1},to:{row:2,column:11}};
+}
+
+// ═══════════════════════════════════════════════════════
+// ── 3 FUNCIONES NUEVAS DE GENERACIÓN ──
+// ═══════════════════════════════════════════════════════
+
+// 1. EXCEL GLOBAL: un solo archivo con TODO consolidado + hoja resumen
+async function buildExcelGlobal(){
+  var wb=new ExcelJS.Workbook();
+  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+
+  if(G.isMulti){
+    // Hoja RESUMEN por centro
+    var filas=G.centros.map(function(c){
+      return{centro:c,m:calcM(G.rows.filter(function(r){return String(r['Centro'])===c;}))};
+    });
+    buildResumenHoja(wb,filas);
+  }
+
+  // Hojas consolidadas (FUENTE/TABLAS/GRUPOS/INSIGHTS) con TODOS los datos
+  buildContextSheets(wb,{
+    rows:G.rows,
+    m:G.m,
+    centro:G.isMulti?null:G.centro,
+    labelTitulo:G.isMulti?'CONSOLIDADO GLOBAL ('+G.centros.length+' centros)':G.centro+' — '+sucName(G.centro)+' / '+G.suc
+  });
+
+  return wb.xlsx.writeBuffer();
+}
+
+// 2. EXCEL POR SOCIEDAD: un solo libro con una hoja por sociedad (KB/KC/KN/KO/KS/KT)
+async function buildExcelPorSociedad(){
+  var wb=new ExcelJS.Workbook();
+  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+
+  // Agrupar por sociedad
+  var bySoc={};
+  G.rows.forEach(function(r){
+    var s=socCode(r['Centro']);
+    if(!bySoc[s])bySoc[s]=[];
+    bySoc[s].push(r);
+  });
+
+  // Hoja resumen por sociedad
+  var filasResumen=Object.keys(bySoc).sort().map(function(s){
+    var rowsS=bySoc[s];
+    var centrosEnSoc=Array.from(new Set(rowsS.map(function(r){return r['Centro'];})));
+    return{soc:s,centros:centrosEnSoc,m:calcM(rowsS)};
+  });
+
+  var wsR=wb.addWorksheet('RESUMEN SOCIEDADES',{views:[{state:'frozen',ySplit:2}]});
+  wsR.columns=[{width:10},{width:30},{width:13},{width:11},{width:14},{width:16},{width:14},{width:14},{width:16}];
+  var t=wsR.addRow(['RESUMEN POR SOCIEDAD']);
+  wsR.mergeCells('A1:I1');t.height=28;
+  sc(t.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');t.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},name:'Arial',size:14};
+  var h=wsR.addRow(['SOCIEDAD','NOMBRE','# CENTROS','RENGLONES','EFECTIVIDAD','TEÓRICO (pz)','FALTANTES','SOBRANTES','DIF NETA $']);
+  h.height=24;
+  for(var c=1;c<=9;c++){sc(h.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
+  filasResumen.forEach(function(f,i){
+    var alt=i%2===1;var bg=alt?'FFF0F7FF':'FFFFFFFF';
+    var r=wsR.addRow([f.soc,socName(f.soc),f.centros.length,f.m.nC,f.m.efec,f.m.teo,f.m.falt,f.m.sobr,f.m.vDiff]);
+    r.height=18;
+    sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
+    sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
+    sc(r.getCell(3),bg,'FF1A252F',false,'#,##0','right');
+    sc(r.getCell(4),bg,'FF1A252F',false,'#,##0','right');
+    var efBg=f.m.efec<0.5?'FFF8D7DA':f.m.efec<0.8?'FFFFF3CD':'FFD4EDDA';
+    var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
+    sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
+    sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
+    sc(r.getCell(7),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
+    sc(r.getCell(8),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
+    sc(r.getCell(9),f.m.vDiff<0?'FFF8D7DA':'FFD4EDDA',f.m.vDiff<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');
+  });
+
+  // Una sección de hojas por sociedad
+  Object.keys(bySoc).sort().forEach(function(s){
+    var rowsS=bySoc[s];
+    var mS=calcM(rowsS);
+    var centrosTxt=Array.from(new Set(rowsS.map(function(r){return r['Centro'];}))).sort().join(', ');
+    buildContextSheets(wb,{
+      rows:rowsS,
+      m:mS,
+      centro:null,
+      sufijo:s,
+      labelTitulo:'SOCIEDAD '+s+' — '+socName(s)+' ('+centrosTxt+')'
+    });
+  });
+
+  return wb.xlsx.writeBuffer();
+}
+
+// 3. ZIP CON UN EXCEL POR SUCURSAL: archivos individuales por Centro
+async function buildZipPorSucursal(){
+  var zip=new JSZip();
+  var fecha=new Date().toISOString().slice(0,10);
+
+  // Carpeta por sociedad
+  for(var i=0;i<G.centros.length;i++){
+    var c=G.centros[i];
+    setStatus('Generando '+(i+1)+'/'+G.centros.length+': '+c+' — '+sucName(c));
+    await new Promise(function(r){setTimeout(r,5);}); // yield UI
+
+    var sub=G.rows.filter(function(r){return String(r['Centro'])===c;});
+    var mC=calcM(sub);
+    var wb=new ExcelJS.Workbook();
+    wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+    buildContextSheets(wb,{
+      rows:sub,
+      m:mC,
+      centro:c,
+      labelTitulo:c+' — '+sucName(c)
+    });
+    var buf=await wb.xlsx.writeBuffer();
+    var sucNorm=sucName(c).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,40);
+    var folder=socCode(c)+'_'+socName(c).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,30);
+    zip.file(folder+'/Efectividad_'+c+'_'+sucNorm+'_'+fecha+'.xlsx',buf);
+  }
+
+  setStatus('Comprimiendo ZIP…');
+  return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+}
+
+// ── Orquestador principal ──
+async function runGen(mode){
+  var allBtns=['btnDl','btnPerCentro','btnPerSuc','btnAllZip'];
+  allBtns.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=true;});
+  var origText={};
+  allBtns.forEach(function(id){var b=document.getElementById(id);if(b){origText[id]=b.innerHTML;}});
+
+  try{
+    var fecha=new Date().toISOString().slice(0,10);
+
+    if(mode==='global'){
+      setStatus('Generando Excel global…');
+      document.getElementById('btnDl').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      var buf=await buildExcelGlobal();
+      dlBuf(buf,'EfectividadGlobal_'+(G.isMulti?'multi':G.centro)+'_'+fecha+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+    else if(mode==='soc'){
+      setStatus('Generando Excel por Sociedad…');
+      document.getElementById('btnPerCentro').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      var buf=await buildExcelPorSociedad();
+      dlBuf(buf,'EfectividadPorSociedad_'+fecha+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+    else if(mode==='suc'){
+      document.getElementById('btnPerSuc').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      var blob=await buildZipPorSucursal();
+      dlBlob(blob,'EfectividadPorSucursal_'+fecha+'.zip');
+    }
+    else if(mode==='all'){
+      document.getElementById('btnAllZip').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      var zip=new JSZip();
+
+      setStatus('1/3 Generando Excel Global…');
+      await new Promise(function(r){setTimeout(r,5);});
+      var bufG=await buildExcelGlobal();
+      zip.file('1_EfectividadGlobal_'+fecha+'.xlsx',bufG);
+
+      setStatus('2/3 Generando Excel por Sociedad…');
+      await new Promise(function(r){setTimeout(r,5);});
+      var bufS=await buildExcelPorSociedad();
+      zip.file('2_EfectividadPorSociedad_'+fecha+'.xlsx',bufS);
+
+      setStatus('3/3 Generando archivos individuales…');
+      for(var i=0;i<G.centros.length;i++){
+        var c=G.centros[i];
+        setStatus('3/3 Procesando '+(i+1)+'/'+G.centros.length+': '+c+' — '+sucName(c));
+        await new Promise(function(r){setTimeout(r,5);});
+        var sub=G.rows.filter(function(r){return String(r['Centro'])===c;});
+        var mC=calcM(sub);
+        var wb=new ExcelJS.Workbook();
+        wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+        buildContextSheets(wb,{rows:sub,m:mC,centro:c,labelTitulo:c+' — '+sucName(c)});
+        var bufI=await wb.xlsx.writeBuffer();
+        var sucNorm=sucName(c).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,40);
+        var folder='3_IndividualPorSucursal/'+socCode(c)+'_'+socName(c).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,30);
+        zip.file(folder+'/Efectividad_'+c+'_'+sucNorm+'_'+fecha+'.xlsx',bufI);
+      }
+
+      setStatus('Comprimiendo ZIP final…');
+      var blobAll=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+      dlBlob(blobAll,'Efectividad_COMPLETO_'+fecha+'.zip');
+    }
+
+    setStatus('✓ Listo. Descarga iniciada.');
+    setTimeout(function(){setStatus('');},4000);
+  }catch(err){
+    setStatus('⚠ Error: '+err.message);
+    alert('Error al generar: '+err.message);
+  }finally{
+    allBtns.forEach(function(id){
+      var b=document.getElementById(id);
+      if(b){b.disabled=false;b.innerHTML=origText[id];}
+    });
+  }
+}
+
+function dlBuf(buf,name,mime){
+  var blob=new Blob([buf],{type:mime});
+  dlBlob(blob,name);
+}
+function dlBlob(blob,name){
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='Efectividad_'+G.centro+'_'+new Date().toISOString().slice(0,10)+'.xlsx';a.click();
-  URL.revokeObjectURL(url);
+  var a=document.createElement('a');a.href=url;a.download=name;a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
 }
 </script>
