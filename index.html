@@ -1,65 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efectividad Inventario · Multi-Centro</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+html,body{background:#eef1f6;margin:0;padding:0}
+body{padding:24px}
+</style>
+</head>
+<body>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif}
-.wrap{background:linear-gradient(135deg,#0f172a 0%,#1c3b5c 50%,#0d2137 100%);min-height:700px;padding:18px;border-radius:12px}
-.hdr{background:rgba(13,33,55,.75);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:0.5px solid rgba(255,255,255,.14);border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.glass{background:rgba(255,255,255,.07);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:0.5px solid rgba(255,255,255,.14);border-radius:12px}
-.dz{border:1.5px dashed rgba(255,255,255,.28);border-radius:14px;padding:56px 40px;text-align:center;cursor:pointer;transition:.2s;background:rgba(255,255,255,.04)}
-.dz:hover,.dz.drag{border-color:rgba(93,173,226,.8);background:rgba(45,106,159,.18)}
-.tabs{display:flex;gap:4px;background:rgba(0,0,0,.35);border-radius:10px;padding:5px;margin-bottom:14px}
-.tab{flex:1;padding:8px 6px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:500;color:rgba(255,255,255,.5);transition:.15s;border:none;background:transparent;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
-.tab.on{background:rgba(255,255,255,.13);color:#fff;border:0.5px solid rgba(255,255,255,.2)}
-.tab:hover:not(.on){color:rgba(255,255,255,.8)}
+.wrap{background:#f1f4f9;min-height:700px;padding:18px;border-radius:16px}
+.hdr{background:#fff;border-radius:16px;padding:16px 22px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 20px 27px 0 rgba(0,0,0,.04);border:1px solid #f0f2f5}
+.glass{background:#fff;border:1px solid #f0f2f5;border-radius:16px;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)}
+.dz{border:1.5px dashed #cbd5e1;border-radius:16px;padding:56px 40px;text-align:center;cursor:pointer;transition:.2s;background:#f8fafc}
+.dz:hover,.dz.drag{border-color:#2152ff;background:#eef4ff}
+.tabs{display:flex;gap:4px;background:#f0f2f5;border-radius:12px;padding:5px;margin-bottom:14px}
+.tab{flex:1;padding:9px 6px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;color:#8392ab;transition:.15s;border:none;background:transparent;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.tab.on{background:#fff;color:#344767;box-shadow:0 3px 8px rgba(0,0,0,.08)}
+.tab:hover:not(.on){color:#344767}
 table.dt{width:100%;border-collapse:collapse;font-size:11.5px}
-table.dt th{background:#1e3a5f;color:#fff;padding:7px 9px;font-size:10.5px;font-weight:500;position:sticky;top:0;white-space:nowrap;text-align:left}
-table.dt td{padding:5px 9px;border-bottom:0.5px solid rgba(255,255,255,.06);color:rgba(255,255,255,.78);white-space:nowrap}
-table.dt tr:nth-child(even) td{background:rgba(255,255,255,.03)}
-table.dt tr:hover td{background:rgba(45,106,159,.22)}
-.neg{color:#e74c3c!important;font-weight:500}
-.pos{color:#2ecc71!important;font-weight:500}
-.mrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.07);font-size:13px}
+table.dt th{background:transparent;color:#8392ab;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;white-space:nowrap;text-align:left;border-bottom:2px solid #f0f2f5}
+table.dt td{padding:9px 12px;border-bottom:1px solid #f4f6f8;color:#344767;white-space:nowrap}
+table.dt tr:hover td{background:#f8fafc}
+.neg{color:#e74c3c!important;font-weight:600}
+.pos{color:#2dce89!important;font-weight:600}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f4f6f8;font-size:13px}
 .mrow:last-child{border-bottom:none}
-.ml{color:rgba(255,255,255,.58)}
-.mv{color:#fff;font-weight:500}
-.sec{font-size:10.5px;font-weight:500;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
-.pb{height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:3px}
-.pf{height:5px;border-radius:3px}
-.ic{background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:9px;padding:12px 15px;margin-bottom:9px}
-.ic.cr{border-left:3px solid #e74c3c}
-.ic.wa{border-left:3px solid #f39c12}
-.ic.ok{border-left:3px solid #2ecc71}
-.ic.in{border-left:3px solid #3498db}
-.it{font-size:13px;font-weight:500;color:#fff;margin-bottom:5px}
-.ib{font-size:12px;color:rgba(255,255,255,.62);line-height:1.7}
-.btnd{background:linear-gradient(135deg,#27ae60,#1a8045);border:none;border-radius:8px;color:#fff;padding:8px 18px;cursor:pointer;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.ml{color:#8392ab}
+.mv{color:#344767;font-weight:600}
+.sec{font-size:10.5px;font-weight:700;color:#8392ab;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.pb{height:6px;border-radius:3px;background:#f0f2f5;overflow:hidden;margin-top:4px}
+.pf{height:6px;border-radius:3px}
+.ic{background:#fff;border:1px solid #f0f2f5;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)}
+.ic.cr{border-left:4px solid #e74c3c}
+.ic.wa{border-left:4px solid #fb6340}
+.ic.ok{border-left:4px solid #2dce89}
+.ic.in{border-left:4px solid #11cdef}
+.it{font-size:13px;font-weight:700;color:#344767;margin-bottom:6px}
+.ib{font-size:12px;color:#67748e;line-height:1.7}
+.btnd{background:linear-gradient(310deg,#1a8045,#27ae60);border:none;border-radius:10px;color:#fff;padding:10px 18px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 10px rgba(39,174,96,.3)}
 .btnd:disabled{opacity:.5;cursor:default}
-.btnd.alt{background:linear-gradient(135deg,#2d6a9f,#1c4a73)}
-.btnd.zip{background:linear-gradient(135deg,#e67e22,#b8651b)}
-.btnr{background:rgba(255,255,255,.09);border:0.5px solid rgba(255,255,255,.18);border-radius:8px;color:rgba(255,255,255,.72);padding:8px 14px;cursor:pointer;font-size:12.5px;display:inline-flex;align-items:center;gap:5px}
-.err{background:rgba(192,57,43,.2);border:0.5px solid #c0392b;border-radius:9px;padding:10px 15px;color:#e74c3c;font-size:12.5px;margin-top:10px;display:none}
-.multi-banner{background:linear-gradient(135deg,rgba(230,126,34,.18),rgba(243,156,18,.14));border:0.5px solid rgba(243,156,18,.45);border-radius:10px;padding:11px 15px;margin-bottom:12px;display:flex;align-items:center;gap:11px;font-size:12.5px;color:#fff}
-.multi-banner .badge{background:rgba(243,156,18,.25);border:0.5px solid rgba(243,156,18,.6);border-radius:6px;padding:3px 8px;font-size:10.5px;font-weight:500;color:#f39c12}
+.btnd.alt{background:linear-gradient(310deg,#1c4a73,#2d6a9f);box-shadow:0 4px 10px rgba(45,106,159,.3)}
+.btnd.zip{background:linear-gradient(310deg,#b8651b,#e67e22);box-shadow:0 4px 10px rgba(230,126,34,.3)}
+.btnr{background:#f8f9fa;border:1px solid #e9ecef;border-radius:10px;color:#67748e;padding:10px 14px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.err{background:#fdecea;border:1px solid #f5b7ae;border-radius:12px;padding:10px 15px;color:#c0392b;font-size:12.5px;margin-top:10px;display:none}
+.multi-banner{background:linear-gradient(120deg,#fff6ea,#fffaf0);border:1px solid #fcdca0;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:12.5px;color:#7a4a14}
+.multi-banner .badge{background:#fff0d6;border:1px solid #fcdca0;border-radius:7px;padding:3px 9px;font-size:10.5px;font-weight:700;color:#b8651b}
 .exp-row{display:flex;gap:8px;flex-wrap:wrap}
 .exp-row .btnd{flex:1;min-width:160px;justify-content:center}
-.suc-chip{display:inline-block;background:rgba(93,173,226,.15);border:0.5px solid rgba(93,173,226,.4);border-radius:5px;padding:1px 7px;font-size:10.5px;color:#5dade2;margin-left:5px;font-weight:500}
-.gen-status{font-size:11px;color:rgba(255,255,255,.58);margin-top:6px;display:none}
+.suc-chip{display:inline-block;background:#eaf6fc;border:1px solid #b9e6f5;border-radius:6px;padding:1px 8px;font-size:10.5px;color:#0d8fb5;margin-left:5px;font-weight:600}
+.gen-status{font-size:11px;color:#8392ab;margin-top:8px;display:none}
 .gen-status.show{display:block}
+.kpi{background:#fff;border:1px solid #f0f2f5;border-radius:14px;padding:12px;text-align:center;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)}
 </style>
 
 <div class="wrap">
   <div class="hdr">
-    <div>
-      <div style="color:#fff;font-size:16px;font-weight:500"><i class="ti ti-chart-bar" style="color:#5dade2;margin-right:7px" aria-hidden="true"></i>Efectividad Inventario · Multi-Centro</div>
-      <div style="color:rgba(255,255,255,.42);font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP</div>
+    <div style="display:flex;align-items:center;gap:13px">
+      <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(310deg,#2152ff,#21d4fd);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(33,82,255,.35);flex-shrink:0">
+        <i class="ti ti-chart-bar" style="color:#fff;font-size:20px" aria-hidden="true"></i>
+      </div>
+      <div>
+        <div style="color:#344767;font-size:16px;font-weight:700">Efectividad Inventario · Multi-Centro</div>
+        <div style="color:#8392ab;font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP</div>
+      </div>
     </div>
     <div id="efBadge"></div>
   </div>
 
   <div id="upSection">
     <div class="dz" id="dz">
-      <i class="ti ti-file-spreadsheet" style="font-size:42px;color:rgba(255,255,255,.3);display:block;margin-bottom:14px" aria-hidden="true"></i>
-      <div style="color:#fff;font-size:15px;font-weight:500;margin-bottom:6px">Arrastra el archivo aquí</div>
-      <div style="color:rgba(255,255,255,.42);font-size:12.5px">o haz clic para seleccionar · .xlsx / .xls · Acepta archivos con uno o varios centros</div>
+      <i class="ti ti-file-spreadsheet" style="font-size:42px;color:#cbd5e1;display:block;margin-bottom:14px" aria-hidden="true"></i>
+      <div style="color:#344767;font-size:15px;font-weight:700;margin-bottom:6px">Arrastra el archivo aquí</div>
+      <div style="color:#8392ab;font-size:12.5px">o haz clic para seleccionar · .xlsx / .xls · Acepta archivos con uno o varios centros</div>
     </div>
     <input type="file" id="fi" accept=".xlsx,.xls" style="display:none">
     <div class="err" id="errBox"></div>
@@ -68,19 +86,19 @@ table.dt tr:hover td{background:rgba(45,106,159,.22)}
   <div id="resSection" style="display:none">
 
     <div id="multiBanner" class="multi-banner" style="display:none">
-      <i class="ti ti-stack-2" style="color:#f39c12;font-size:22px" aria-hidden="true"></i>
+      <i class="ti ti-stack-2" style="color:#b8651b;font-size:22px" aria-hidden="true"></i>
       <div style="flex:1">
-        <div style="font-weight:500;margin-bottom:2px">Archivo multi-centro detectado <span class="badge" id="multiCount"></span></div>
-        <div style="color:rgba(255,255,255,.6);font-size:11.5px">Se generarán automáticamente los 3 niveles de Excel y se descargarán en un ZIP.</div>
+        <div style="font-weight:700;margin-bottom:2px">Archivo multi-centro detectado <span class="badge" id="multiCount"></span></div>
+        <div style="color:#8a5a22;font-size:11.5px">Se generarán automáticamente los 3 niveles de Excel y se descargarán en un ZIP.</div>
       </div>
       <button class="btnd zip" id="btnAllZip">
         <i class="ti ti-file-zip" aria-hidden="true"></i>Generar todo (ZIP)
       </button>
     </div>
 
-    <div class="glass" style="padding:12px 15px;margin-bottom:12px">
+    <div class="glass" style="padding:14px 16px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div style="color:rgba(255,255,255,.68);font-size:12.5px" id="fInfo"></div>
+        <div style="color:#67748e;font-size:12.5px" id="fInfo"></div>
         <button class="btnr" id="btnReset">
           <i class="ti ti-refresh" aria-hidden="true"></i>Cargar otro
         </button>
@@ -215,8 +233,10 @@ function pFile(file){
 
 function fNum(v,d){d=d===undefined?2:d;return typeof v==='number'?v.toLocaleString('es-MX',{minimumFractionDigits:d,maximumFractionDigits:d}):String(v||'');}
 function pct(v){return typeof v==='number'?(v*100).toFixed(2)+'%':'—';}
+// Porcentaje entero TRUNCADO (sin redondear) — usado en la tabla de Efectividad por Almacén
+function pctInt(v){return typeof v==='number'?Math.trunc(v*100)+'%':'—';}
 function money(v){return '$'+fNum(v);}
-function negC(v){return v<0?'#e74c3c':v>0?'#2ecc71':'rgba(255,255,255,.7)';}
+function negC(v){return v<0?'#e74c3c':v>0?'#2ecc71':'#67748e';}
 
 function calcM(rows){
   var teo=0,cnt=0,falt=0,sobr=0,vTeo=0,vCnt=0,nC=0,nF=0,nS=0;
@@ -233,6 +253,21 @@ function calcM(rows){
   });
   var corr=teo-falt-sobr,efec=teo>0?corr/teo:0,nD=nF+nS;
   return{teo:teo,cnt:cnt,falt:falt,sobr:sobr,corr:corr,efec:efec,vTeo:vTeo,vCnt:vCnt,vDiff:vCnt-vTeo,nC:nC,nF:nF,nS:nS,nD:nD,skuOk:nC>0?(nC-nD)/nC:0,pctD:nC>0?nD/nC:0,mots:mots,grps:grps};
+}
+
+// Agrupa cualquier set de renglones por un campo (p.ej. "Almacen") y calcula efectividad por cada grupo
+function calcByGroup(rows,field){
+  var groups={};
+  rows.forEach(function(r){
+    var v=r[field];
+    var k=String(v!==undefined&&v!==null&&v!==''?v:'(sin dato)');
+    if(!groups[k])groups[k]=[];
+    groups[k].push(r);
+  });
+  return Object.keys(groups).sort().map(function(k){
+    var mm=calcM(groups[k]);
+    return {key:k,nC:mm.nC,efec:mm.efec,teo:mm.teo,falt:mm.falt,sobr:mm.sobr,corr:mm.corr,vTeo:mm.vTeo,vCnt:mm.vCnt,vDiff:mm.vDiff};
+  });
 }
 
 function renderAll(){
@@ -252,10 +287,10 @@ function renderAll(){
   var infoExtra=G.isMulti
     ?G.centros.length+' centros · '+G.centros.slice(0,3).map(function(c){return c+' ('+sucName(c).slice(0,18)+')';}).join(', ')+(G.centros.length>3?'…':'')
     :G.centro+' — '+sucName(G.centro)+' / Almacén '+G.suc;
-  document.getElementById('fInfo').innerHTML='<i class="ti ti-file" aria-hidden="true" style="margin-right:5px"></i><b>'+esc(G.file)+'</b> &middot; '+m.nC+' renglones &middot; '+infoExtra;
+  document.getElementById('fInfo').innerHTML='<i class="ti ti-file" aria-hidden="true" style="margin-right:5px"></i><b style="color:#344767">'+esc(G.file)+'</b> &middot; '+m.nC+' renglones &middot; '+infoExtra;
 
-  var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#f39c12':'#2ecc71';
-  document.getElementById('efBadge').innerHTML='<div style="background:'+ec+'18;border:0.5px solid '+ec+'50;border-radius:10px;padding:7px 16px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,.48);margin-bottom:1px">EFECTIVIDAD '+(G.isMulti?'GLOBAL':'')+'</div><div style="font-size:24px;font-weight:500;color:'+ec+'">'+pct(m.efec)+'</div></div>';
+  var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#fb6340':'#2dce89';
+  document.getElementById('efBadge').innerHTML='<div style="background:'+ec+'14;border:1px solid '+ec+'40;border-radius:12px;padding:8px 18px;text-align:center"><div style="font-size:10px;color:#8392ab;margin-bottom:1px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">EFECTIVIDAD '+(G.isMulti?'GLOBAL':'')+'</div><div style="font-size:24px;font-weight:700;color:'+ec+'">'+pct(m.efec)+'</div></div>';
   rFuente();rTablas();rGrupos();rInsights();
 }
 
@@ -294,9 +329,9 @@ function rFuente(){
     var tot=fil.length,pages=Math.ceil(tot/G.ps)||1,st=G.pg*G.ps;
     var sl=fil.slice(st,st+G.ps);
     var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-      +'<input id="si" type="text" placeholder="Buscar..." value="'+esc(G.q)+'" style="background:rgba(255,255,255,.08);border:0.5px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;padding:6px 11px;font-size:12px;width:210px">'
-      +'<span style="color:rgba(255,255,255,.45);font-size:11.5px">'+( st+1)+'–'+Math.min(st+G.ps,tot)+' de '+tot+'</span></div>'
-      +'<div style="overflow-x:auto;border-radius:9px;border:0.5px solid rgba(255,255,255,.1)">'
+      +'<input id="si" type="text" placeholder="Buscar..." value="'+esc(G.q)+'" style="background:#f8f9fa;border:1px solid #e9ecef;border-radius:9px;color:#344767;padding:7px 12px;font-size:12px;width:210px">'
+      +'<span style="color:#8392ab;font-size:11.5px">'+( st+1)+'–'+Math.min(st+G.ps,tot)+' de '+tot+'</span></div>'
+      +'<div style="overflow-x:auto;border-radius:14px;border:1px solid #f0f2f5">'
       +'<table class="dt"><thead><tr>'+SHOWN.map(function(h){return '<th title="'+esc(h)+'">'+(h.length>16?h.slice(0,14)+'…':h)+'</th>';}).join('')+'</tr></thead><tbody>';
     sl.forEach(function(row){
       html+='<tr>';
@@ -321,7 +356,7 @@ function rFuente(){
       +'<div style="display:flex;gap:7px">'
       +'<button class="btnr" id="bPrev" style="padding:6px 12px;font-size:11.5px"'+(G.pg===0?' disabled':'')+'>&larr; Anterior</button>'
       +'<button class="btnr" id="bNext" style="padding:6px 12px;font-size:11.5px"'+(G.pg>=pages-1?' disabled':'')+'>&nbsp;Siguiente &rarr;</button>'
-      +'</div><span style="color:rgba(255,255,255,.38);font-size:11px">Página '+(G.pg+1)+' de '+pages+'</span></div>';
+      +'</div><span style="color:#8392ab;font-size:11px">Página '+(G.pg+1)+' de '+pages+'</span></div>';
 
     document.getElementById('p0').innerHTML='<div class="glass" style="padding:14px">'+html+'</div>';
     document.getElementById('si').addEventListener('input',function(){G.q=this.value;G.pg=0;render();});
@@ -337,34 +372,34 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 // ── TABLAS TAB ──
 function rTablas(){
   var m=G.m;
-  var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#f39c12':'#2ecc71';
+  var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#fb6340':'#2dce89';
   var ms=Object.entries(m.mots).sort(function(a,b){return a[1].dv-b[1].dv;});
   var totDV=ms.reduce(function(a,e){return a+e[1].dv;},0);
   var totIP=ms.reduce(function(a,e){return a+e[1].ip;},0);
 
   var titleLabel=G.isMulti?'CONSOLIDADO ('+G.centros.length+' centros)':G.centro+' — '+sucName(G.centro)+' · '+G.suc;
 
-  var left='<div style="background:rgba(13,33,55,.85);border-radius:9px 9px 0 0;padding:11px 15px;text-align:center;border:0.5px solid rgba(255,255,255,.1)">'
-    +'<div style="color:rgba(255,255,255,.45);font-size:10.5px;text-transform:uppercase;letter-spacing:1px">'+esc(titleLabel)+'</div>'
-    +'<div style="color:#fff;font-size:14px;font-weight:500;margin-top:2px">EFECTIVIDAD DE INVENTARIO</div></div>'
-    +'<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-top:none;border-radius:0 0 9px 9px;padding:12px 15px;margin-bottom:12px">'
-    +[['Total de piezas contadas',fNum(m.cnt,3),'rgba(255,255,255,.85)'],
-      ['Total Existencia Teórica',fNum(m.teo,3),'rgba(255,255,255,.85)'],
-      ['Dif. Faltantes',fNum(m.falt,3),'#f39c12'],
-      ['Dif. Sobrantes',fNum(m.sobr,3),'#f39c12'],
-      ['Piezas Correctas',fNum(m.corr,3),'#2ecc71'],
-      ['Total Diferencias (cant)',fNum(m.falt+m.sobr,3),'#f39c12'],
+  var left='<div style="background:linear-gradient(310deg,#2152ff,#21d4fd);border-radius:14px 14px 0 0;padding:12px 16px;text-align:center;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)">'
+    +'<div style="color:rgba(255,255,255,.78);font-size:10.5px;text-transform:uppercase;letter-spacing:1px">'+esc(titleLabel)+'</div>'
+    +'<div style="color:#fff;font-size:14px;font-weight:700;margin-top:2px">EFECTIVIDAD DE INVENTARIO</div></div>'
+    +'<div style="background:#fff;border:1px solid #f0f2f5;border-top:none;border-radius:0 0 14px 14px;padding:13px 16px;margin-bottom:12px">'
+    +[['Total de piezas contadas',fNum(m.cnt,3),'#344767'],
+      ['Total Existencia Teórica',fNum(m.teo,3),'#344767'],
+      ['Dif. Faltantes',fNum(m.falt,3),'#fb6340'],
+      ['Dif. Sobrantes',fNum(m.sobr,3),'#fb6340'],
+      ['Piezas Correctas',fNum(m.corr,3),'#2dce89'],
+      ['Total Diferencias (cant)',fNum(m.falt+m.sobr,3),'#fb6340'],
     ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')
-    +'<div class="mrow" style="border-top:0.5px solid rgba(255,255,255,.15);padding-top:9px;margin-top:4px"><span style="color:#fff;font-size:13px;font-weight:500">% Efectividad</span>'
-    +'<span style="font-size:22px;font-weight:500;color:'+ec+'">'+pct(m.efec)+'</span></div></div>'
-    +'<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-radius:9px;padding:12px 15px;margin-bottom:12px">'
+    +'<div class="mrow" style="border-top:1px solid #f0f2f5;padding-top:9px;margin-top:4px"><span style="color:#344767;font-size:13px;font-weight:700">% Efectividad</span>'
+    +'<span style="font-size:22px;font-weight:700;color:'+ec+'">'+pct(m.efec)+'</span></div></div>'
+    +'<div class="glass" style="padding:13px 16px;margin-bottom:12px">'
     +'<div class="sec">Conteo</div>'
-    +[['Contados',m.nC,'rgba(255,255,255,.85)'],['Con sobrante',m.nS,'#f39c12'],['Con faltante',m.nF,'#e74c3c'],
-      ['Total Difs SKU',m.nD,'#e74c3c'],['% SKUs controlados',pct(m.skuOk),'#2ecc71'],['% Con Diferencia',pct(m.pctD),'#e74c3c'],
+    +[['Contados',m.nC,'#344767'],['Con sobrante',m.nS,'#fb6340'],['Con faltante',m.nF,'#e74c3c'],
+      ['Total Difs SKU',m.nD,'#e74c3c'],['% SKUs controlados',pct(m.skuOk),'#2dce89'],['% Con Diferencia',pct(m.pctD),'#e74c3c'],
     ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')+'</div>'
-    +'<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-radius:9px;padding:12px 15px">'
+    +'<div class="glass" style="padding:13px 16px">'
     +'<div class="sec">Diferencia en Valor</div>'
-    +[['Valor Cant Contada',money(m.vCnt),'rgba(255,255,255,.85)'],['Valor Exist Teórica',money(m.vTeo),'rgba(255,255,255,.85)'],
+    +[['Valor Cant Contada',money(m.vCnt),'#344767'],['Valor Exist Teórica',money(m.vTeo),'#344767'],
       ['Diferencia Neta',money(m.vDiff),negC(m.vDiff)],
     ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')+'</div>';
 
@@ -378,53 +413,68 @@ function rTablas(){
     });
     perCentroBlock='<div class="glass" style="padding:14px;margin-bottom:12px">'
       +'<div class="sec"><i class="ti ti-building" aria-hidden="true" style="margin-right:5px"></i>Resumen por Sucursal</div>'
-      +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">'
+      +'<div style="overflow-x:auto"><table class="dt">'
       +'<thead><tr>'
       +['Centro','Sucursal','Renglones','Efectividad','Dif. Valor'].map(function(h,i){
-        return '<th style="background:#1e3a5f;color:#fff;padding:6px 9px;text-align:'+(i<2?'left':'right')+';font-size:10.5px;font-weight:500">'+h+'</th>';
+        return '<th style="text-align:'+(i<2?'left':'right')+'">'+h+'</th>';
       }).join('')+'</tr></thead><tbody>'
-      +perC.map(function(p,i){
-        var bg=i%2===0?'rgba(255,255,255,.02)':'transparent';
-        var ce=p.efec<0.5?'#e74c3c':p.efec<0.8?'#f39c12':'#2ecc71';
-        return '<tr style="background:'+bg+'">'
-          +'<td style="padding:5px 9px;color:#fff;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,.05)">'+esc(p.centro)+'</td>'
-          +'<td style="padding:5px 9px;color:rgba(255,255,255,.72);border-bottom:0.5px solid rgba(255,255,255,.05)">'+esc(sucName(p.centro))+'</td>'
-          +'<td style="padding:5px 9px;color:rgba(255,255,255,.65);text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+p.nC+'</td>'
-          +'<td style="padding:5px 9px;color:'+ce+';font-weight:500;text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+pct(p.efec)+'</td>'
-          +'<td style="padding:5px 9px;color:'+negC(p.vDiff)+';font-weight:500;text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+money(p.vDiff)+'</td></tr>';
+      +perC.map(function(p){
+        var ce=p.efec<0.5?'#e74c3c':p.efec<0.8?'#fb6340':'#2dce89';
+        return '<tr>'
+          +'<td style="color:#344767;font-weight:600">'+esc(p.centro)+'</td>'
+          +'<td>'+esc(sucName(p.centro))+'</td>'
+          +'<td style="text-align:right">'+p.nC+'</td>'
+          +'<td style="color:'+ce+';font-weight:700;text-align:right">'+pct(p.efec)+'</td>'
+          +'<td style="color:'+negC(p.vDiff)+';font-weight:600;text-align:right">'+money(p.vDiff)+'</td></tr>';
       }).join('')
       +'</tbody></table></div></div>';
   }
 
-  var right='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
-    +'<div style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center">'
-    +'<div style="color:rgba(255,255,255,.4);font-size:10.5px">CENTRO'+(G.isMulti?'S':'')+'</div>'
-    +'<div style="color:#fff;font-size:14px;font-weight:500">'+(G.isMulti?G.centros.length:G.centro)+'</div></div>'
-    +'<div style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center">'
-    +'<div style="color:rgba(255,255,255,.4);font-size:10.5px">SUCURSAL</div>'
-    +'<div style="color:#fff;font-size:13px;font-weight:500">'+(G.isMulti?'Multi':sucName(G.centro))+'</div></div></div>'
-    +perCentroBlock
-    +'<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-radius:9px;overflow:hidden">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr>'
-    +'<th style="background:#1e3a5f;color:#fff;padding:7px 10px;text-align:left;font-size:10.5px;font-weight:500">Motivo de Diferencia</th>'
-    +'<th style="background:#1e3a5f;color:#fff;padding:7px 10px;text-align:right;font-size:10.5px;font-weight:500">Dif. Valores</th>'
-    +'<th style="background:#1e3a5f;color:#fff;padding:7px 10px;text-align:right;font-size:10.5px;font-weight:500">Imp. PV c/IVA</th>'
+  // Efectividad por Almacén — tabla nueva, % entero TRUNCADO (sin redondear)
+  var byAlm=calcByGroup(G.rows,'Almacen');
+  var almBlock='<div class="glass" style="padding:14px;margin-top:12px">'
+    +'<div class="sec"><i class="ti ti-building-warehouse" aria-hidden="true" style="margin-right:5px"></i>Efectividad por Almacén <span style="color:#adb5bd;font-weight:400;text-transform:none;letter-spacing:0;font-size:10.5px">· % entero, sin redondear</span></div>'
+    +'<div style="overflow-x:auto"><table class="dt"><thead><tr>'
+    +'<th>Almacén</th><th style="text-align:right">Renglones</th><th style="text-align:right">Teórico (pz)</th><th style="text-align:right">Correctas (pz)</th><th style="text-align:right">Efectividad</th>'
     +'</tr></thead><tbody>'
-    +ms.map(function(e,i){
-      var k=e[0],v=e[1],bg=i%2===0?'rgba(255,255,255,.02)':'transparent';
-      return '<tr style="background:'+bg+'"><td style="padding:6px 10px;color:rgba(255,255,255,.75);border-bottom:0.5px solid rgba(255,255,255,.06)">'+esc(k)+'</td>'
-        +'<td style="padding:6px 10px;text-align:right;font-weight:500;color:'+negC(v.dv)+';border-bottom:0.5px solid rgba(255,255,255,.06)">'+money(v.dv)+'</td>'
-        +'<td style="padding:6px 10px;text-align:right;color:'+negC(v.ip)+';border-bottom:0.5px solid rgba(255,255,255,.06)">'+(v.ip!==0?money(v.ip):'—')+'</td></tr>';
+    +byAlm.map(function(a){
+      var ce=a.efec<0.5?'#e74c3c':a.efec<0.8?'#fb6340':'#2dce89';
+      return '<tr>'
+        +'<td style="color:#344767;font-weight:600">'+esc(a.key)+'</td>'
+        +'<td style="text-align:right">'+a.nC+'</td>'
+        +'<td style="text-align:right">'+fNum(a.teo,3)+'</td>'
+        +'<td style="text-align:right">'+fNum(a.corr,3)+'</td>'
+        +'<td style="text-align:right;color:'+ce+';font-weight:700">'+pctInt(a.efec)+'</td></tr>';
     }).join('')
-    +'<tr style="background:rgba(13,33,55,.6)">'
-    +'<td style="padding:7px 10px;color:#fff;font-weight:500;font-size:12.5px">TOTAL</td>'
-    +'<td style="padding:7px 10px;text-align:right;font-weight:500;color:'+negC(totDV)+'">'+money(totDV)+'</td>'
-    +'<td style="padding:7px 10px;text-align:right;font-weight:500;color:'+negC(totIP)+'">'+money(totIP)+'</td></tr>'
+    +'</tbody></table></div></div>';
+
+  var right='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+    +'<div class="kpi">'
+    +'<div style="color:#8392ab;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">CENTRO'+(G.isMulti?'S':'')+'</div>'
+    +'<div style="color:#344767;font-size:14px;font-weight:700;margin-top:2px">'+(G.isMulti?G.centros.length:G.centro)+'</div></div>'
+    +'<div class="kpi">'
+    +'<div style="color:#8392ab;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">SUCURSAL</div>'
+    +'<div style="color:#344767;font-size:13px;font-weight:700;margin-top:2px">'+(G.isMulti?'Multi':sucName(G.centro))+'</div></div></div>'
+    +perCentroBlock
+    +'<div class="glass" style="overflow:hidden">'
+    +'<table class="dt">'
+    +'<thead><tr>'
+    +'<th>Motivo de Diferencia</th><th style="text-align:right">Dif. Valores</th><th style="text-align:right">Imp. PV c/IVA</th>'
+    +'</tr></thead><tbody>'
+    +ms.map(function(e){
+      var k=e[0],v=e[1];
+      return '<tr><td>'+esc(k)+'</td>'
+        +'<td style="text-align:right;font-weight:600;color:'+negC(v.dv)+'">'+money(v.dv)+'</td>'
+        +'<td style="text-align:right;color:'+negC(v.ip)+'">'+(v.ip!==0?money(v.ip):'—')+'</td></tr>';
+    }).join('')
+    +'<tr style="background:#f8fafc">'
+    +'<td style="color:#344767;font-weight:700;font-size:12.5px">TOTAL</td>'
+    +'<td style="text-align:right;font-weight:700;color:'+negC(totDV)+'">'+money(totDV)+'</td>'
+    +'<td style="text-align:right;font-weight:700;color:'+negC(totIP)+'">'+money(totIP)+'</td></tr>'
     +'</tbody></table></div>';
 
   document.getElementById('p1').innerHTML='<div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px">'+
-    '<div>'+left+'</div><div>'+right+'</div></div>';
+    '<div>'+left+'</div><div>'+right+'</div></div>'+almBlock;
 }
 
 // ── GRUPOS TAB ──
@@ -440,11 +490,11 @@ function rGrupos(){
   function mkBars(arr,neg,mx){
     return arr.map(function(e){
       var g=e[0],v=e[1],pw=(Math.abs(v.dv)/mx*100).toFixed(1);
-      return '<div style="padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.06)">'
+      return '<div style="padding:7px 0;border-bottom:1px solid #f4f6f8">'
         +'<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-        +'<span style="color:rgba(255,255,255,.72);font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px" title="'+esc(g)+'">'+esc(g)+'</span>'
-        +'<span style="color:'+(neg?'#e74c3c':'#2ecc71')+';font-weight:500;font-size:12px;flex-shrink:0">'+money(v.dv)+'</span></div>'
-        +'<div class="pb"><div class="pf" style="width:'+pw+'%;background:'+(neg?'#e74c3c':'#2ecc71')+'"></div></div></div>';
+        +'<span style="color:#67748e;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px" title="'+esc(g)+'">'+esc(g)+'</span>'
+        +'<span style="color:'+(neg?'#e74c3c':'#2dce89')+';font-weight:700;font-size:12px;flex-shrink:0">'+money(v.dv)+'</span></div>'
+        +'<div class="pb"><div class="pf" style="width:'+pw+'%;background:'+(neg?'#e74c3c':'#2dce89')+'"></div></div></div>';
     }).join('');
   }
 
@@ -452,31 +502,30 @@ function rGrupos(){
     +'<div class="glass" style="padding:14px">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
     +'<div class="sec" style="margin-bottom:0"><i class="ti ti-trending-down" aria-hidden="true" style="color:#e74c3c;margin-right:5px"></i>Faltantes · Mayor impacto</div>'
-    +'<div style="color:#e74c3c;font-size:12.5px;font-weight:500">'+money(tF)+'</div></div>'
+    +'<div style="color:#e74c3c;font-size:12.5px;font-weight:700">'+money(tF)+'</div></div>'
     +mkBars(gF,true,mxF)+'</div>'
     +'<div class="glass" style="padding:14px">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<div class="sec" style="margin-bottom:0"><i class="ti ti-trending-up" aria-hidden="true" style="color:#2ecc71;margin-right:5px"></i>Sobrantes · Mayor impacto</div>'
-    +'<div style="color:#2ecc71;font-size:12.5px;font-weight:500">'+money(tS)+'</div></div>'
+    +'<div class="sec" style="margin-bottom:0"><i class="ti ti-trending-up" aria-hidden="true" style="color:#2dce89;margin-right:5px"></i>Sobrantes · Mayor impacto</div>'
+    +'<div style="color:#2dce89;font-size:12.5px;font-weight:700">'+money(tS)+'</div></div>'
     +mkBars(gS,false,mxS)+'</div></div>';
 
   var tbl='<div class="glass" style="padding:14px"><div class="sec">Resumen por grupo — Valor contado vs teórico</div>'
     +'<div style="overflow-x:auto">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:580px">'
+    +'<table class="dt" style="min-width:580px">'
     +'<thead><tr>'
     +['Grupo de Materiales','Valor Teórico','Valor Contado','Diferencia','SKUs Falt.','SKUs Sobr.'].map(function(h,i){
-      return '<th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:'+(i===0?'left':'right')+';font-size:10.5px;font-weight:500">'+h+'</th>';
+      return '<th style="text-align:'+(i===0?'left':'right')+'">'+h+'</th>';
     }).join('')+'</tr></thead><tbody>'
-    +all.map(function(e,i){
+    +all.map(function(e){
       var g=e[0],v=e[1];
-      var bg=i%2===0?'rgba(255,255,255,.02)':'transparent';
-      return '<tr style="background:'+bg+'">'
-        +'<td style="padding:5px 9px;color:rgba(255,255,255,.72);border-bottom:0.5px solid rgba(255,255,255,.05)">'+esc(g)+'</td>'
-        +'<td style="padding:5px 9px;color:rgba(255,255,255,.65);text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+money(v.vt)+'</td>'
-        +'<td style="padding:5px 9px;color:rgba(255,255,255,.65);text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+money(v.vc)+'</td>'
-        +'<td style="padding:5px 9px;color:'+negC(v.dv)+';text-align:right;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,.05)">'+money(v.dv)+'</td>'
-        +'<td style="padding:5px 9px;color:#e74c3c;text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+v.nF+'</td>'
-        +'<td style="padding:5px 9px;color:#f39c12;text-align:right;border-bottom:0.5px solid rgba(255,255,255,.05)">'+v.nS+'</td></tr>';
+      return '<tr>'
+        +'<td>'+esc(g)+'</td>'
+        +'<td style="text-align:right">'+money(v.vt)+'</td>'
+        +'<td style="text-align:right">'+money(v.vc)+'</td>'
+        +'<td style="text-align:right;font-weight:700;color:'+negC(v.dv)+'">'+money(v.dv)+'</td>'
+        +'<td style="text-align:right;color:#e74c3c">'+v.nF+'</td>'
+        +'<td style="text-align:right;color:#fb6340">'+v.nS+'</td></tr>';
     }).join('')+'</tbody></table></div></div>';
 
   document.getElementById('p2').innerHTML=top2+tbl;
@@ -485,7 +534,7 @@ function rGrupos(){
 // ── INSIGHTS TAB ──
 function rInsights(){
   var m=G.m;
-  var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#f39c12':'#2ecc71';
+  var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#fb6340':'#2dce89';
   var efSt=m.efec<0.5?'cr':m.efec<0.8?'wa':'ok';
   var top3F=Object.entries(m.grps).filter(function(e){return e[1].dv<0;}).sort(function(a,b){return a[1].dv-b[1].dv;}).slice(0,3).map(function(e){return e[0];});
 
@@ -493,30 +542,30 @@ function rInsights(){
     +'<div>'
     +'<div class="ic '+efSt+'">'
     +'<div class="it"><i class="ti ti-target" aria-hidden="true" style="margin-right:6px;color:'+ec+'"></i>Efectividad '+(G.isMulti?'Global':'General')+'</div>'
-    +'<div style="font-size:34px;font-weight:500;color:'+ec+';margin:8px 0">'+pct(m.efec)+'</div>'
+    +'<div style="font-size:34px;font-weight:700;color:'+ec+';margin:8px 0">'+pct(m.efec)+'</div>'
     +'<div class="ib"><b>Fórmula:</b> (Teórico − Faltantes − Sobrantes) / Teórico<br>'
     +'= ('+fNum(m.teo,3)+' − '+fNum(m.falt,3)+' − '+fNum(m.sobr,3)+') / '+fNum(m.teo,3)+'<br>'
     +'= <b>'+fNum(m.corr,3)+' piezas correctas</b><br><br>'
     +(m.efec<0.5?'⚠ Estado CRÍTICO — efectividad bajo 50%. Requiere intervención urgente.':m.efec<0.8?'⚠ Estado REGULAR — revisar procesos de conteo y codificación.':'✓ Estado aceptable — mantener control y reforzar áreas críticas.')+'</div></div>'
     +'<div class="ic in">'
-    +'<div class="it"><i class="ti ti-users" aria-hidden="true" style="margin-right:6px;color:#3498db"></i>Control de SKUs</div>'
+    +'<div class="it"><i class="ti ti-users" aria-hidden="true" style="margin-right:6px;color:#11cdef"></i>Control de SKUs</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">'
-    +'<div style="background:rgba(46,204,113,.1);border-radius:7px;padding:8px;text-align:center"><div style="color:#2ecc71;font-size:16px;font-weight:500">'+pct(m.skuOk)+'</div><div style="color:rgba(255,255,255,.4);font-size:10.5px">SKUs controlados</div></div>'
-    +'<div style="background:rgba(231,76,60,.1);border-radius:7px;padding:8px;text-align:center"><div style="color:#e74c3c;font-size:16px;font-weight:500">'+pct(m.pctD)+'</div><div style="color:rgba(255,255,255,.4);font-size:10.5px">Con diferencia</div></div></div>'
-    +'<div class="ib">Contados: <b>'+m.nC+'</b> &nbsp;·&nbsp; Faltantes: <span style="color:#e74c3c"><b>'+m.nF+'</b></span> &nbsp;·&nbsp; Sobrantes: <span style="color:#f39c12"><b>'+m.nS+'</b></span></div></div>'
+    +'<div style="background:#2dce8912;border-radius:9px;padding:8px;text-align:center"><div style="color:#2dce89;font-size:16px;font-weight:700">'+pct(m.skuOk)+'</div><div style="color:#8392ab;font-size:10.5px">SKUs controlados</div></div>'
+    +'<div style="background:#e74c3c12;border-radius:9px;padding:8px;text-align:center"><div style="color:#e74c3c;font-size:16px;font-weight:700">'+pct(m.pctD)+'</div><div style="color:#8392ab;font-size:10.5px">Con diferencia</div></div></div>'
+    +'<div class="ib">Contados: <b>'+m.nC+'</b> &nbsp;·&nbsp; Faltantes: <span style="color:#e74c3c"><b>'+m.nF+'</b></span> &nbsp;·&nbsp; Sobrantes: <span style="color:#fb6340"><b>'+m.nS+'</b></span></div></div>'
     +'<div class="ic in">'
-    +'<div class="it"><i class="ti ti-currency-peso" aria-hidden="true" style="margin-right:6px;color:#3498db"></i>Diferencia en Valor</div>'
+    +'<div class="it"><i class="ti ti-currency-peso" aria-hidden="true" style="margin-right:6px;color:#11cdef"></i>Diferencia en Valor</div>'
     +'<div class="mrow"><span class="ml">Valor Teórico</span><span class="mv">'+money(m.vTeo)+'</span></div>'
     +'<div class="mrow"><span class="ml">Valor Contado</span><span class="mv">'+money(m.vCnt)+'</span></div>'
-    +'<div class="mrow" style="border-top:0.5px solid rgba(255,255,255,.15);padding-top:7px;margin-top:3px"><span style="color:#fff;font-weight:500">Diferencia Neta</span>'
-    +'<span style="color:'+negC(m.vDiff)+';font-size:16px;font-weight:500">'+money(m.vDiff)+'</span></div></div></div>'
+    +'<div class="mrow" style="border-top:1px solid #f0f2f5;padding-top:7px;margin-top:3px"><span style="color:#344767;font-weight:700">Diferencia Neta</span>'
+    +'<span style="color:'+negC(m.vDiff)+';font-size:16px;font-weight:700">'+money(m.vDiff)+'</span></div></div></div>'
     +'<div>'
     +'<div class="ic cr"><div class="it"><i class="ti ti-trending-down" aria-hidden="true" style="margin-right:6px;color:#e74c3c"></i>Grupos con mayor faltante</div>'
-    +'<div class="ib">'+Object.entries(m.grps).filter(function(e){return e[1].dv<0;}).sort(function(a,b){return a[1].dv-b[1].dv;}).slice(0,6).map(function(e){return '<div class="mrow" style="font-size:12px"><span class="ml" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;display:inline-block">'+esc(e[0])+'</span><span style="color:#e74c3c;font-weight:500">'+money(e[1].dv)+'</span></div>';}).join('')+'</div></div>'
-    +'<div class="ic wa"><div class="it"><i class="ti ti-trending-up" aria-hidden="true" style="margin-right:6px;color:#f39c12"></i>Grupos con mayor sobrante</div>'
-    +'<div class="ib">'+Object.entries(m.grps).filter(function(e){return e[1].dv>0;}).sort(function(a,b){return b[1].dv-a[1].dv;}).slice(0,5).map(function(e){return '<div class="mrow" style="font-size:12px"><span class="ml" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;display:inline-block">'+esc(e[0])+'</span><span style="color:#2ecc71;font-weight:500">'+money(e[1].dv)+'</span></div>';}).join('')+'</div></div>'
+    +'<div class="ib">'+Object.entries(m.grps).filter(function(e){return e[1].dv<0;}).sort(function(a,b){return a[1].dv-b[1].dv;}).slice(0,6).map(function(e){return '<div class="mrow" style="font-size:12px"><span class="ml" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;display:inline-block">'+esc(e[0])+'</span><span style="color:#e74c3c;font-weight:700">'+money(e[1].dv)+'</span></div>';}).join('')+'</div></div>'
+    +'<div class="ic wa"><div class="it"><i class="ti ti-trending-up" aria-hidden="true" style="margin-right:6px;color:#fb6340"></i>Grupos con mayor sobrante</div>'
+    +'<div class="ib">'+Object.entries(m.grps).filter(function(e){return e[1].dv>0;}).sort(function(a,b){return b[1].dv-a[1].dv;}).slice(0,5).map(function(e){return '<div class="mrow" style="font-size:12px"><span class="ml" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;display:inline-block">'+esc(e[0])+'</span><span style="color:#2dce89;font-weight:700">'+money(e[1].dv)+'</span></div>';}).join('')+'</div></div>'
     +'<div class="ic '+(m.efec<0.5?'cr':'wa')+'">'
-    +'<div class="it"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:6px;color:#f39c12"></i>Recomendaciones clave</div>'
+    +'<div class="it"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:6px;color:#fb6340"></i>Recomendaciones clave</div>'
     +'<div class="ib"><ul style="padding-left:15px;list-style:disc">'
     +'<li style="margin-bottom:5px">Validar movimientos <b>"Un código por otro"</b> — motivo más frecuente. Revisar codificación SAP.</li>'
     +'<li style="margin-bottom:5px">Auditar prioritariamente: <b>'+top3F.map(esc).join(', ')+'</b>.</li>'
@@ -625,6 +674,27 @@ function buildContextSheets(wb,ctx){
   addKpi('Valor Cant Contada',m.vCnt,'FFF0F7FF','FF1A252F','"$"#,##0.00');
   addKpi('Valor Exist Teórica',m.vTeo,'FFF0F7FF','FF1A252F','"$"#,##0.00');
   addKpi('Diferencia Neta',m.vDiff,m.vDiff<0?'FFF8D7DA':'FFD4EDDA',m.vDiff<0?'FFC0392B':'FF1E8449','"$"#,##0.00');
+  wsT.addRow([]);
+
+  // ── EFECTIVIDAD POR ALMACÉN (tabla nueva) — % entero TRUNCADO, sin redondear ──
+  addSecHdr('EFECTIVIDAD POR ALMACÉN');
+  var almHdr=wsT.addRow(['Almacén','Renglones','Efectividad']);
+  almHdr.height=20;
+  sc(almHdr.getCell(1),'FF1E3A5F','FFFFFFFF',true,null,'left');
+  sc(almHdr.getCell(2),'FF1E3A5F','FFFFFFFF',true,null,'right');
+  sc(almHdr.getCell(3),'FF1E3A5F','FFFFFFFF',true,null,'right');
+  var byAlm=calcByGroup(rows,'Almacen');
+  byAlm.forEach(function(a,ai){
+    var efInt=Math.trunc(a.efec*100); // truncado, nunca redondeado
+    var bgA=efInt<50?'FFF8D7DA':efInt<80?'FFFFF3CD':'FFD4EDDA';
+    var fcA=efInt<50?'FFC0392B':efInt<80?'FFAD6B00':'FF1E8449';
+    var rA=wsT.addRow([a.key,a.nC,efInt]);
+    rA.height=18;
+    var altBg=ai%2===0?'FFF7F9FC':'FFFFFFFF';
+    sc(rA.getCell(1),altBg,'FF1A252F',false,null,'left');
+    sc(rA.getCell(2),altBg,'FF1A252F',false,'#,##0','right');
+    sc(rA.getCell(3),bgA,fcA,true,'0"%"','right');
+  });
 
   // Encabezado lateral: Centro / Sucursal
   var mr=4;
@@ -722,17 +792,20 @@ function buildContextSheets(wb,ctx){
   iBody('Contados: '+m.nC+' | Con faltante: '+m.nF+' | Con sobrante: '+m.nS+' | Total con diff: '+m.nD,'FFEBF4FF');
   iBody('SKUs controlados: '+pct(m.skuOk)+' | Con diferencia: '+pct(m.pctD),'FFEBF4FF');
   wsI.addRow([]);
-  iTitle('3. GRUPOS CON MAYOR IMPACTO NEGATIVO','FF2D6A9F','FFFFFFFF',11);
+  iTitle('3. EFECTIVIDAD POR ALMACÉN (% entero, sin redondear)','FF2D6A9F','FFFFFFFF',11);
+  calcByGroup(rows,'Almacen').forEach(function(a){iBody('• '+a.key+': '+Math.trunc(a.efec*100)+'% ('+a.nC+' renglones)',Math.trunc(a.efec*100)<50?'FFFFEAEA':Math.trunc(a.efec*100)<80?'FFFFF3CD':'FFEAFFEA');});
+  wsI.addRow([]);
+  iTitle('4. GRUPOS CON MAYOR IMPACTO NEGATIVO','FF2D6A9F','FFFFFFFF',11);
   Object.entries(m.grps).filter(function(e){return e[1].dv<0;}).sort(function(a,b){return a[1].dv-b[1].dv;}).slice(0,8).forEach(function(e){iBody('• '+e[0]+': '+money(e[1].dv),'FFFFEAEA');});
   wsI.addRow([]);
-  iTitle('4. GRUPOS CON SOBRANTES','FF2D6A9F','FFFFFFFF',11);
+  iTitle('5. GRUPOS CON SOBRANTES','FF2D6A9F','FFFFFFFF',11);
   Object.entries(m.grps).filter(function(e){return e[1].dv>0;}).sort(function(a,b){return b[1].dv-a[1].dv;}).slice(0,6).forEach(function(e){iBody('• '+e[0]+': '+money(e[1].dv),'FFEAFFEA');});
   wsI.addRow([]);
-  iTitle('5. DIFERENCIA DE VALOR TOTAL','FF2D6A9F','FFFFFFFF',11);
+  iTitle('6. DIFERENCIA DE VALOR TOTAL','FF2D6A9F','FFFFFFFF',11);
   iBody('Valor Teorico: '+money(m.vTeo)+' | Valor Contado: '+money(m.vCnt),'FFEBF4FF');
   iBody('Diferencia Neta: '+money(m.vDiff)+(m.vDiff<0?' <- FALTANTE EN VALOR':' <- SOBRANTE EN VALOR'),m.vDiff<0?'FFF8D7DA':'FFD4EDDA');
   wsI.addRow([]);
-  iTitle('6. MOTIVOS DE DIFERENCIA (POR IMPACTO)','FF2D6A9F','FFFFFFFF',11);
+  iTitle('7. MOTIVOS DE DIFERENCIA (POR IMPACTO)','FF2D6A9F','FFFFFFFF',11);
   Object.entries(m.mots).sort(function(a,b){return a[1].dv-b[1].dv;}).forEach(function(e){iBody('• '+e[0]+': '+money(e[1].dv)+' en valores | '+money(e[1].ip)+' PV c/IVA',e[1].dv<0?'FFFFEAEA':'FFEAFFEA');});
 }
 
@@ -762,6 +835,9 @@ function buildResumenHoja(wb,filas){
     var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
     sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
     sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
+    sc(r.getCell(7),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
+    sc(r.getCell(8),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
+    sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
     sc(r.getCell(7),bg,'FF1A252F',false,'#,##0.000','right');
     sc(r.getCell(8),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
     sc(r.getCell(9),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
@@ -787,96 +863,6 @@ function buildResumenHoja(wb,filas){
   sc(tr.getCell(11),totM.vDiff<0?'FFC0392B':'FF1E8449','FFFFFFFF',true,'"$"#,##0.00','right');
 
   ws.autoFilter={from:{row:2,column:1},to:{row:2,column:11}};
-}
-
-// ═══════════════════════════════════════════════════════
-// ── 3 FUNCIONES NUEVAS DE GENERACIÓN ──
-// ═══════════════════════════════════════════════════════
-
-// 1. EXCEL GLOBAL: un solo archivo con TODO consolidado + hoja resumen
-async function buildExcelGlobal(){
-  var wb=new ExcelJS.Workbook();
-  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
-
-  if(G.isMulti){
-    // Hoja RESUMEN por centro
-    var filas=G.centros.map(function(c){
-      return{centro:c,m:calcM(G.rows.filter(function(r){return String(r['Centro'])===c;}))};
-    });
-    buildResumenHoja(wb,filas);
-  }
-
-  // Hojas consolidadas (FUENTE/TABLAS/GRUPOS/INSIGHTS) con TODOS los datos
-  buildContextSheets(wb,{
-    rows:G.rows,
-    m:G.m,
-    centro:G.isMulti?null:G.centro,
-    labelTitulo:G.isMulti?'CONSOLIDADO GLOBAL ('+G.centros.length+' centros)':G.centro+' — '+sucName(G.centro)+' / '+G.suc
-  });
-
-  return wb.xlsx.writeBuffer();
-}
-
-// 2. EXCEL POR SOCIEDAD: un solo libro con una hoja por sociedad (KB/KC/KN/KO/KS/KT)
-async function buildExcelPorSociedad(){
-  var wb=new ExcelJS.Workbook();
-  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
-
-  // Agrupar por sociedad
-  var bySoc={};
-  G.rows.forEach(function(r){
-    var s=socCode(r['Centro']);
-    if(!bySoc[s])bySoc[s]=[];
-    bySoc[s].push(r);
-  });
-
-  // Hoja resumen por sociedad
-  var filasResumen=Object.keys(bySoc).sort().map(function(s){
-    var rowsS=bySoc[s];
-    var centrosEnSoc=Array.from(new Set(rowsS.map(function(r){return r['Centro'];})));
-    return{soc:s,centros:centrosEnSoc,m:calcM(rowsS)};
-  });
-
-  var wsR=wb.addWorksheet('RESUMEN SOCIEDADES',{views:[{state:'frozen',ySplit:2}]});
-  wsR.columns=[{width:10},{width:30},{width:13},{width:11},{width:14},{width:16},{width:14},{width:14},{width:16}];
-  var t=wsR.addRow(['RESUMEN POR SOCIEDAD']);
-  wsR.mergeCells('A1:I1');t.height=28;
-  sc(t.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');t.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},name:'Arial',size:14};
-  var h=wsR.addRow(['SOCIEDAD','NOMBRE','# CENTROS','RENGLONES','EFECTIVIDAD','TEÓRICO (pz)','FALTANTES','SOBRANTES','DIF NETA $']);
-  h.height=24;
-  for(var c=1;c<=9;c++){sc(h.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
-  filasResumen.forEach(function(f,i){
-    var alt=i%2===1;var bg=alt?'FFF0F7FF':'FFFFFFFF';
-    var r=wsR.addRow([f.soc,socName(f.soc),f.centros.length,f.m.nC,f.m.efec,f.m.teo,f.m.falt,f.m.sobr,f.m.vDiff]);
-    r.height=18;
-    sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
-    sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
-    sc(r.getCell(3),bg,'FF1A252F',false,'#,##0','right');
-    sc(r.getCell(4),bg,'FF1A252F',false,'#,##0','right');
-    var efBg=f.m.efec<0.5?'FFF8D7DA':f.m.efec<0.8?'FFFFF3CD':'FFD4EDDA';
-    var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
-    sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
-    sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
-    sc(r.getCell(7),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
-    sc(r.getCell(8),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
-    sc(r.getCell(9),f.m.vDiff<0?'FFF8D7DA':'FFD4EDDA',f.m.vDiff<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');
-  });
-
-  // Una sección de hojas por sociedad
-  Object.keys(bySoc).sort().forEach(function(s){
-    var rowsS=bySoc[s];
-    var mS=calcM(rowsS);
-    var centrosTxt=Array.from(new Set(rowsS.map(function(r){return r['Centro'];}))).sort().join(', ');
-    buildContextSheets(wb,{
-      rows:rowsS,
-      m:mS,
-      centro:null,
-      sufijo:s,
-      labelTitulo:'SOCIEDAD '+s+' — '+socName(s)+' ('+centrosTxt+')'
-    });
-  });
-
-  return wb.xlsx.writeBuffer();
 }
 
 // 3. ZIP CON UN EXCEL POR SUCURSAL: archivos individuales por Centro
@@ -994,4 +980,98 @@ function dlBlob(blob,name){
   var a=document.createElement('a');a.href=url;a.download=name;a.click();
   setTimeout(function(){URL.revokeObjectURL(url);},2000);
 }
+
+// ═══════════════════════════════════════════════════════
+// ── 3 FUNCIONES DE GENERACIÓN DE EXCEL ──
+// ═══════════════════════════════════════════════════════
+
+// 1. EXCEL GLOBAL: un solo archivo con TODO consolidado + hoja resumen
+async function buildExcelGlobal(){
+  var wb=new ExcelJS.Workbook();
+  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+
+  if(G.isMulti){
+    // Hoja RESUMEN por centro
+    var filas=G.centros.map(function(c){
+      return{centro:c,m:calcM(G.rows.filter(function(r){return String(r['Centro'])===c;}))};
+    });
+    buildResumenHoja(wb,filas);
+  }
+
+  // Hojas consolidadas (FUENTE/TABLAS/GRUPOS/INSIGHTS) con TODOS los datos
+  buildContextSheets(wb,{
+    rows:G.rows,
+    m:G.m,
+    centro:G.isMulti?null:G.centro,
+    labelTitulo:G.isMulti?'CONSOLIDADO GLOBAL ('+G.centros.length+' centros)':G.centro+' — '+sucName(G.centro)+' / '+G.suc
+  });
+
+  return wb.xlsx.writeBuffer();
+}
+
+// 2. EXCEL POR SOCIEDAD: un solo libro con una hoja por sociedad (KB/KC/KN/KO/KS/KT)
+var bySoc={};
+async function buildExcelPorSociedad(){
+  var wb=new ExcelJS.Workbook();
+  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+
+  // Agrupar por sociedad
+  bySoc={};
+  G.rows.forEach(function(r){
+    var s=socCode(r['Centro']);
+    if(!bySoc[s])bySoc[s]=[];
+    bySoc[s].push(r);
+  });
+
+  // Hoja resumen por sociedad
+  var filasResumen=Object.keys(bySoc).sort().map(function(s){
+    var rowsS=bySoc[s];
+    var centrosEnSoc=Array.from(new Set(rowsS.map(function(r){return r['Centro'];})));
+    return{soc:s,centros:centrosEnSoc,m:calcM(rowsS)};
+  });
+
+  var wsR=wb.addWorksheet('RESUMEN SOCIEDADES',{views:[{state:'frozen',ySplit:2}]});
+  wsR.columns=[{width:10},{width:30},{width:13},{width:11},{width:14},{width:16},{width:14},{width:14},{width:16}];
+  var t=wsR.addRow(['RESUMEN POR SOCIEDAD']);
+  wsR.mergeCells('A1:I1');t.height=28;
+  sc(t.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');t.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},name:'Arial',size:14};
+  var h=wsR.addRow(['SOCIEDAD','NOMBRE','# CENTROS','RENGLONES','EFECTIVIDAD','TEÓRICO (pz)','FALTANTES','SOBRANTES','DIF NETA $']);
+  h.height=24;
+  for(var c=1;c<=9;c++){sc(h.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
+  filasResumen.forEach(function(f,i){
+    var alt=i%2===1;var bg=alt?'FFF0F7FF':'FFFFFFFF';
+    var r=wsR.addRow([f.soc,socName(f.soc),f.centros.length,f.m.nC,f.m.efec,f.m.teo,f.m.falt,f.m.sobr,f.m.vDiff]);
+    r.height=18;
+    sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
+    sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
+    sc(r.getCell(3),bg,'FF1A252F',false,'#,##0','right');
+    sc(r.getCell(4),bg,'FF1A252F',false,'#,##0','right');
+    var efBg=f.m.efec<0.5?'FFF8D7DA':f.m.efec<0.8?'FFFFF3CD':'FFD4EDDA';
+    var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
+    sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
+    sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
+    sc(r.getCell(7),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
+    sc(r.getCell(8),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
+    sc(r.getCell(9),f.m.vDiff<0?'FFF8D7DA':'FFD4EDDA',f.m.vDiff<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');
+  });
+
+  // Una sección de hojas por sociedad
+  Object.keys(bySoc).sort().forEach(function(s){
+    var rowsS=bySoc[s];
+    var mS=calcM(rowsS);
+    var centrosTxt=Array.from(new Set(rowsS.map(function(r){return r['Centro'];}))).sort().join(', ');
+    buildContextSheets(wb,{
+      rows:rowsS,
+      m:mS,
+      centro:null,
+      sufijo:s,
+      labelTitulo:'SOCIEDAD '+s+' — '+socName(s)+' ('+centrosTxt+')'
+    });
+  });
+
+  return wb.xlsx.writeBuffer();
+}
 </script>
+
+</body>
+</html>
