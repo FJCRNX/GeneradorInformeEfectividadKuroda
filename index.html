@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Efectividad GK-Cerezo</title>
+<title>Efectividad Inventario · Multi-Centro</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <style>
 html,body{background:#eef1f6;margin:0;padding:0}
@@ -66,7 +66,7 @@ table.dt tr:hover td{background:#f8fafc}
         <i class="ti ti-chart-bar" style="color:#fff;font-size:20px" aria-hidden="true"></i>
       </div>
       <div>
-        <div style="color:#344767;font-size:16px;font-weight:700">Calculo de Efectividad-General/Almacenes "Genero Cerezo Ramos Fco J"</div>
+        <div style="color:#344767;font-size:16px;font-weight:700">Efectividad Inventario · Multi-Centro</div>
         <div style="color:#8392ab;font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP</div>
       </div>
     </div>
@@ -232,9 +232,9 @@ function pFile(file){
 }
 
 function fNum(v,d){d=d===undefined?2:d;return typeof v==='number'?v.toLocaleString('es-MX',{minimumFractionDigits:d,maximumFractionDigits:d}):String(v||'');}
-function pct(v){return typeof v==='number'?(v*100).toFixed(2)+'%':'—';}
-// Porcentaje entero TRUNCADO (sin redondear) — usado en la tabla de Efectividad por Almacén
-function pctInt(v){return typeof v==='number'?Math.trunc(v*100)+'%':'—';}
+// % entero TRUNCADO (sin redondear) — usado en TODA la app (badges, tablas, insights y Excel)
+function pct(v){return typeof v==='number'?Math.trunc(v*100)+'%':'—';}
+var pctInt=pct; // alias, mismo comportamiento (mantenido por compatibilidad)
 function money(v){return '$'+fNum(v);}
 function negC(v){return v<0?'#e74c3c':v>0?'#2ecc71':'#67748e';}
 
@@ -653,7 +653,7 @@ function buildContextSheets(wb,ctx){
   addKpi('Dif. Sobrantes',m.sobr,'FFFFF9E5','FFAD6B00','#,##0.000');
   addKpi('Piezas Correctas',m.corr,'FFD4EDDA','FF1E8449','#,##0.000');
   addKpi('Total Diferencias (cant)',m.falt+m.sobr,'FFFFF9E5','FFAD6B00','#,##0.000');
-  addKpi('% Efectividad',m.efec,efBg,efFc,'0.00%');
+  addKpi('% Efectividad',Math.trunc(m.efec*100),efBg,efFc,'0"%"');
   wsT.addRow([]);
 
   function addSecHdr(label){
@@ -667,8 +667,8 @@ function buildContextSheets(wb,ctx){
   addKpi('Con sobrante',m.nS,'FFFFF9E5','FFAD6B00','#,##0');
   addKpi('Con faltante',m.nF,'FFFFEAEA','FFC0392B','#,##0');
   addKpi('Total Difs SKU',m.nD,'FFF8D7DA','FFC0392B','#,##0');
-  addKpi('% SKUs controlados',m.skuOk,'FFD4EDDA','FF1E8449','0.00%');
-  addKpi('% Con Diferencia',m.pctD,'FFF8D7DA','FFC0392B','0.00%');
+  addKpi('% SKUs controlados',Math.trunc(m.skuOk*100),'FFD4EDDA','FF1E8449','0"%"');
+  addKpi('% Con Diferencia',Math.trunc(m.pctD*100),'FFF8D7DA','FFC0392B','0"%"');
   wsT.addRow([]);
   addSecHdr('DIFERENCIA EN VALOR');
   addKpi('Valor Cant Contada',m.vCnt,'FFF0F7FF','FF1A252F','"$"#,##0.00');
@@ -825,18 +825,16 @@ function buildResumenHoja(wb,filas){
 
   filas.forEach(function(f,i){
     var alt=i%2===1;var bg=alt?'FFF0F7FF':'FFFFFFFF';
-    var r=ws.addRow([f.centro,sucName(f.centro),socName(f.centro),f.m.nC,f.m.efec,f.m.teo,f.m.cnt,f.m.falt,f.m.sobr,f.m.vTeo,f.m.vDiff]);
+    var efInt=Math.trunc(f.m.efec*100); // truncado entero, sin redondear
+    var r=ws.addRow([f.centro,sucName(f.centro),socName(f.centro),f.m.nC,efInt,f.m.teo,f.m.cnt,f.m.falt,f.m.sobr,f.m.vTeo,f.m.vDiff]);
     r.height=18;
     sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
     sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
     sc(r.getCell(3),bg,'FF1A252F',false,null,'left');
     sc(r.getCell(4),bg,'FF1A252F',false,'#,##0','right');
-    var efBg=f.m.efec<0.5?'FFF8D7DA':f.m.efec<0.8?'FFFFF3CD':'FFD4EDDA';
-    var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
-    sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
-    sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
-    sc(r.getCell(7),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
-    sc(r.getCell(8),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
+    var efBg=efInt<50?'FFF8D7DA':efInt<80?'FFFFF3CD':'FFD4EDDA';
+    var efFc=efInt<50?'FFC0392B':efInt<80?'FFAD6B00':'FF1E8449';
+    sc(r.getCell(5),efBg,efFc,true,'0"%"','right');
     sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
     sc(r.getCell(7),bg,'FF1A252F',false,'#,##0.000','right');
     sc(r.getCell(8),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
@@ -847,14 +845,15 @@ function buildResumenHoja(wb,filas){
 
   // Fila TOTAL
   var totM=G.m;
-  var tr=ws.addRow(['TOTAL','('+filas.length+' centros)','—',totM.nC,totM.efec,totM.teo,totM.cnt,totM.falt,totM.sobr,totM.vTeo,totM.vDiff]);
+  var totEfInt=Math.trunc(totM.efec*100); // truncado entero, sin redondear
+  var tr=ws.addRow(['TOTAL','('+filas.length+' centros)','—',totM.nC,totEfInt,totM.teo,totM.cnt,totM.falt,totM.sobr,totM.vTeo,totM.vDiff]);
   tr.height=22;
   sc(tr.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
   sc(tr.getCell(2),'FF0D2137','FFFFFFFF',true,null,'left');
   sc(tr.getCell(3),'FF0D2137','FFFFFFFF',true,null,'left');
   sc(tr.getCell(4),'FF0D2137','FFFFFFFF',true,'#,##0','right');
-  var efTBg=totM.efec<0.5?'FFC0392B':totM.efec<0.8?'FFAD6B00':'FF1E8449';
-  sc(tr.getCell(5),efTBg,'FFFFFFFF',true,'0.00%','right');
+  var efTBg=totEfInt<50?'FFC0392B':totEfInt<80?'FFAD6B00':'FF1E8449';
+  sc(tr.getCell(5),efTBg,'FFFFFFFF',true,'0"%"','right');
   sc(tr.getCell(6),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
   sc(tr.getCell(7),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
   sc(tr.getCell(8),'FF0D2137','FFFFFFFF',true,'#,##0.000','right');
@@ -1040,15 +1039,16 @@ async function buildExcelPorSociedad(){
   for(var c=1;c<=9;c++){sc(h.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
   filasResumen.forEach(function(f,i){
     var alt=i%2===1;var bg=alt?'FFF0F7FF':'FFFFFFFF';
-    var r=wsR.addRow([f.soc,socName(f.soc),f.centros.length,f.m.nC,f.m.efec,f.m.teo,f.m.falt,f.m.sobr,f.m.vDiff]);
+    var efInt=Math.trunc(f.m.efec*100); // truncado entero, sin redondear
+    var r=wsR.addRow([f.soc,socName(f.soc),f.centros.length,f.m.nC,efInt,f.m.teo,f.m.falt,f.m.sobr,f.m.vDiff]);
     r.height=18;
     sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
     sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
     sc(r.getCell(3),bg,'FF1A252F',false,'#,##0','right');
     sc(r.getCell(4),bg,'FF1A252F',false,'#,##0','right');
-    var efBg=f.m.efec<0.5?'FFF8D7DA':f.m.efec<0.8?'FFFFF3CD':'FFD4EDDA';
-    var efFc=f.m.efec<0.5?'FFC0392B':f.m.efec<0.8?'FFAD6B00':'FF1E8449';
-    sc(r.getCell(5),efBg,efFc,true,'0.00%','right');
+    var efBg=efInt<50?'FFF8D7DA':efInt<80?'FFFFF3CD':'FFD4EDDA';
+    var efFc=efInt<50?'FFC0392B':efInt<80?'FFAD6B00':'FF1E8449';
+    sc(r.getCell(5),efBg,efFc,true,'0"%"','right');
     sc(r.getCell(6),bg,'FF1A252F',false,'#,##0.000','right');
     sc(r.getCell(7),'FFFFEAEA','FFC0392B',true,'#,##0.000','right');
     sc(r.getCell(8),'FFFFF9E5','FFAD6B00',true,'#,##0.000','right');
@@ -1075,3 +1075,4 @@ async function buildExcelPorSociedad(){
 
 </body>
 </html>
+
