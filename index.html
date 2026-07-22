@@ -48,6 +48,7 @@ table.dt tr:hover td{background:#f8fafc}
 .btnd.alt{background:linear-gradient(310deg,#1c4a73,#2d6a9f);box-shadow:0 4px 10px rgba(45,106,159,.3)}
 .btnd.zip{background:linear-gradient(310deg,#b8651b,#e67e22);box-shadow:0 4px 10px rgba(230,126,34,.3)}
 .btnr{background:#f8f9fa;border:1px solid #e9ecef;border-radius:10px;color:#67748e;padding:10px 14px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btnr.on{background:#eef4ff;border-color:#c7dbff;color:#2152ff}
 .err{background:#fdecea;border:1px solid #f5b7ae;border-radius:12px;padding:10px 15px;color:#c0392b;font-size:12.5px;margin-top:10px;display:none}
 .multi-banner{background:linear-gradient(120deg,#fff6ea,#fffaf0);border:1px solid #fcdca0;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:12.5px;color:#7a4a14}
 .multi-banner .badge{background:#fff0d6;border:1px solid #fcdca0;border-radius:7px;padding:3px 9px;font-size:10.5px;font-weight:700;color:#b8651b}
@@ -57,6 +58,17 @@ table.dt tr:hover td{background:#f8fafc}
 .gen-status{font-size:11px;color:#8392ab;margin-top:8px;display:none}
 .gen-status.show{display:block}
 .kpi{background:#fff;border:1px solid #f0f2f5;border-radius:14px;padding:12px;text-align:center;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)}
+input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9px;color:#344767;padding:7px 12px;font-size:12.5px}
+.cal-title{color:#344767;font-size:19px;font-weight:800;letter-spacing:.2px}
+.cal-grid{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid #e3e7ee;border-radius:12px;overflow:hidden;background:#e3e7ee}
+.cal-head{background:#f8fafc;text-align:center;padding:9px 4px;font-size:10.5px;font-weight:700;color:#8392ab;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #e3e7ee}
+.cal-cell{background:#fff;display:flex;flex-direction:column;min-height:96px;border-right:1px solid #eef1f6;border-bottom:1px solid #eef1f6}
+.cal-cell:nth-child(6n){border-right:none}
+.cal-cell.empty{background:#fafbfc}
+.cal-cell.today{box-shadow:inset 0 0 0 2px #2152ff;z-index:1;position:relative}
+.cal-day{display:flex;align-items:center;justify-content:center;padding:7px 6px;font-weight:700;font-size:12.5px;color:#2152ff;background:#eef4ff;border-bottom:1px solid #e3e7ee}
+.cal-task{flex:1;padding:10px 8px;font-size:11px;text-align:center;display:flex;align-items:center;justify-content:center;text-transform:uppercase;color:#344767;line-height:1.4;font-weight:600}
+.cal-task.alt{background:#f8fafc}
 </style>
 
 <div class="wrap">
@@ -70,7 +82,25 @@ table.dt tr:hover td{background:#f8fafc}
         <div style="color:#8392ab;font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP</div>
       </div>
     </div>
-    <div id="efBadge"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="btnr" id="btnCalToggle">
+        <i class="ti ti-calendar" aria-hidden="true"></i>Calendario
+      </button>
+      <div id="efBadge"></div>
+    </div>
+  </div>
+
+  <div id="calSection" style="display:none;margin-bottom:16px">
+    <div class="glass" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="sec" style="margin-bottom:2px">CALENDARIO DE AUDITORÍAS</div>
+          <div class="cal-title" id="calMonthTitle"></div>
+        </div>
+        <input type="month" id="calMonthSelector">
+      </div>
+      <div id="calGrid" class="cal-grid"></div>
+    </div>
   </div>
 
   <div id="upSection">
@@ -190,6 +220,7 @@ var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centr
   [0,1,2,3].forEach(function(i){
     document.getElementById('t'+i).addEventListener('click',function(){switchTab(i);});
   });
+  document.getElementById('btnCalToggle').addEventListener('click',toggleCal);
 })();
 
 function showErr(msg){var b=document.getElementById('errBox');b.textContent='⚠ '+msg;b.style.display='block';}
@@ -980,6 +1011,99 @@ function dlBlob(blob,name){
   setTimeout(function(){URL.revokeObjectURL(url);},2000);
 }
 
+// ── CALENDARIO TAB ──
+var calSeriesData=[
+  "CONCLUIR TIENDAS PENDIENTES",
+  "MOCHIS, BRAVO",
+  "MOCHIS, BRAVO",
+  "TIANGUIS MOCHIS, BRAVO",
+  "GUASAVE, BRAVO",
+  "GUASAVE, BRAVO",
+  "Palmito",
+  "Palmito",
+  "Palmito",
+  "PALMITO, HUERTAS",
+  "CEDIS, CALZADA",
+  "CEDIS, CALZADA",
+  "CEDIS, CALZADA",
+  "COSTA RICA, CEDIS",
+  "COSTA RICA, CALZADA",
+  "NAVOLATO, SANALONA",
+  "GUAMUCHIL, SANALONA",
+  "GUAMUCHIL, SANALONA",
+  "HUERTAS, PAPALOTE",
+  "HUERTAS, PAPALOTE",
+  "HUERTAS, PAPALOTE",
+  "3 RIOS, AEROPUERTO",
+  "3 RIOS, AEROPUERTO",
+  "3 RIOS, AEROPUERTO",
+  "CONCLUIR TIENDAS PENDIENTES",
+  "CONCLUIR TIENDAS PENDIENTES",
+  "CONCLUIR TIENDAS PENDIENTES"
+];
+var calDaysOfWeek=['L','M','X','J','V','S'];
+
+function calGenerate(year,month){
+  var grid=document.getElementById('calGrid');
+  var title=document.getElementById('calMonthTitle');
+  grid.innerHTML='';
+  var dateObj=new Date(year,month,1);
+  var monthName=dateObj.toLocaleString('es-ES',{month:'long',year:'numeric'});
+  title.textContent=monthName.charAt(0).toUpperCase()+monthName.slice(1);
+
+  calDaysOfWeek.forEach(function(d){
+    var h=document.createElement('div');
+    h.className='cal-head';h.textContent=d;grid.appendChild(h);
+  });
+
+  var daysInMonth=new Date(year,month+1,0).getDate();
+  var startDayWeek=new Date(year,month,1).getDay();
+  var padding=startDayWeek!==0?startDayWeek-1:0;
+  var idx=0;
+  for(var i=0;i<padding;i++){
+    var e=document.createElement('div');e.className='cal-cell empty';grid.appendChild(e);idx++;
+  }
+
+  var seriesIndex=0,today=new Date();
+  for(var d=1;d<=daysInMonth;d++){
+    var cur=new Date(year,month,d);
+    if(cur.getDay()===0)continue; // Domingos fuera del calendario
+
+    var cell=document.createElement('div');cell.className='cal-cell';
+    if(cur.getFullYear()===today.getFullYear()&&cur.getMonth()===today.getMonth()&&cur.getDate()===today.getDate()){
+      cell.classList.add('today');
+    }
+    var row=Math.floor(idx/6),alt=row%2!==0;
+    var task=calSeriesData[seriesIndex]||"Concluir Tiendas pendientes";
+    cell.innerHTML='<div class="cal-day">'+d+'</div><div class="cal-task'+(alt?' alt':'')+'">'+esc(task)+'</div>';
+    grid.appendChild(cell);
+    seriesIndex++;idx++;
+  }
+
+  while(idx%6!==0){
+    var e2=document.createElement('div');e2.className='cal-cell empty';grid.appendChild(e2);idx++;
+  }
+}
+
+function toggleCal(){
+  var sec=document.getElementById('calSection');
+  var on=sec.style.display==='none'||!sec.style.display;
+  sec.style.display=on?'block':'none';
+  document.getElementById('btnCalToggle').classList.toggle('on',on);
+}
+
+function initCalTab(){
+  var sel=document.getElementById('calMonthSelector');
+  var t=new Date(),y=t.getFullYear(),mo=t.getMonth();
+  sel.value=y+'-'+String(mo+1).padStart(2,'0');
+  calGenerate(y,mo);
+  sel.addEventListener('change',function(e){
+    if(!e.target.value)return;
+    var parts=e.target.value.split('-');
+    calGenerate(parseInt(parts[0]),parseInt(parts[1])-1);
+  });
+}
+
 // ═══════════════════════════════════════════════════════
 // ── 3 FUNCIONES DE GENERACIÓN DE EXCEL ──
 // ═══════════════════════════════════════════════════════
@@ -1071,6 +1195,8 @@ async function buildExcelPorSociedad(){
 
   return wb.xlsx.writeBuffer();
 }
+
+initCalTab();
 </script>
 
 </body>
