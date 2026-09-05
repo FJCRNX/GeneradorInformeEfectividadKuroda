@@ -134,6 +134,9 @@ input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9p
         </button>
       </div>
       <div class="exp-row">
+        <button class="btnd" id="btnDlUnico" style="display:none;background:linear-gradient(310deg,#11cdef,#1171ef)">
+          <i class="ti ti-bolt" aria-hidden="true"></i>Descargar Excel de este Centro
+        </button>
         <button class="btnd" id="btnDl">
           <i class="ti ti-download" aria-hidden="true"></i>Excel Global
         </button>
@@ -213,6 +216,7 @@ var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centr
   dz.addEventListener('click',function(){document.getElementById('fi').click();});
   document.getElementById('fi').addEventListener('change',function(e){if(e.target.files[0])pFile(e.target.files[0]);});
   document.getElementById('btnReset').addEventListener('click',resetAll);
+  document.getElementById('btnDlUnico').addEventListener('click',function(){runGen('unico');});
   document.getElementById('btnDl').addEventListener('click',function(){runGen('global');});
   document.getElementById('btnPerCentro').addEventListener('click',function(){runGen('soc');});
   document.getElementById('btnPerSuc').addEventListener('click',function(){runGen('suc');});
@@ -314,6 +318,9 @@ function renderAll(){
   }else{
     banner.style.display='none';
   }
+
+  // Botón de descarga directa: solo visible cuando el archivo trae un único centro
+  document.getElementById('btnDlUnico').style.display=G.isMulti?'none':'inline-flex';
 
   var infoExtra=G.isMulti
     ?G.centros.length+' centros · '+G.centros.slice(0,3).map(function(c){return c+' ('+sucName(c).slice(0,18)+')';}).join(', ')+(G.centros.length>3?'…':'')
@@ -740,16 +747,29 @@ function buildContextSheets(wb,ctx){
   sc(gcell(mr,6),'FF1E3A5F','FFFFFFFF',true,null,'right');gcell(mr,6).value='Dif. en Valores';
   sc(gcell(mr,7),'FF1E3A5F','FFFFFFFF',true,null,'right');gcell(mr,7).value='Imp. PV Men c/IVA';
   mr++;
+  // Imp. PV Men c/IVA: SOLO se calcula para los motivos "Faltante No Justific" y "Un codigo por otro".
+  // Cualquier otro motivo (p.ej. "Falta de proceso", "Sobrante No Justific") nunca se calcula (queda en blanco).
+  // Para "Un codigo por otro" (y en general), si la Dif. en Valores del motivo es positiva, tampoco se calcula.
+  function esMotivoTotalizableIP(motivo){
+    var n=String(motivo||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    return (/falt.*justific/.test(n))||(/codigo.*por.*otro/.test(n));
+  }
+  var totIP=0;
   Object.entries(m.mots).forEach(function(e){
     var k=e[0],v=e[1];
     var bg=v.dv<0?'FFFFEAEA':v.dv>0?'FFEAFFEA':'FFF5F5F5';
     sc(gcell(mr,5),bg,'FF1A252F',false,null,'left');gcell(mr,5).value=k;
     sc(gcell(mr,6),bg,v.dv<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,6).value=v.dv;
-    sc(gcell(mr,7),bg,v.ip<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,7).value=v.ip||0;
+    if(esMotivoTotalizableIP(k)&&v.dv<=0){
+      var ipVal=v.ip||0;
+      totIP+=ipVal;
+      sc(gcell(mr,7),bg,ipVal<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,7).value=ipVal;
+    }else{
+      sc(gcell(mr,7),bg,'FF8392AB',false,null,'right');gcell(mr,7).value='—';
+    }
     mr++;
   });
   var totDV=Object.values(m.mots).reduce(function(a,v){return a+v.dv;},0);
-  var totIP=Object.values(m.mots).reduce(function(a,v){return a+v.ip;},0);
   sc(gcell(mr,5),'FF1E3A5F','FFFFFFFF',true,null,'left');gcell(mr,5).value='TOTAL';
   sc(gcell(mr,6),totDV<0?'FFF8D7DA':'FFD4EDDA',totDV<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,6).value=totDV;
   sc(gcell(mr,7),totIP<0?'FFF8D7DA':'FFD4EDDA',totIP<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,7).value=totIP;
@@ -928,7 +948,7 @@ async function buildZipPorSucursal(){
 
 // ── Orquestador principal ──
 async function runGen(mode){
-  var allBtns=['btnDl','btnPerCentro','btnPerSuc','btnAllZip'];
+  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip'];
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=true;});
   var origText={};
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b){origText[id]=b.innerHTML;}});
@@ -936,7 +956,14 @@ async function runGen(mode){
   try{
     var fecha=new Date().toISOString().slice(0,10);
 
-    if(mode==='global'){
+    if(mode==='unico'){
+      setStatus('Generando Excel del Centro '+G.centro+'…');
+      document.getElementById('btnDlUnico').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      var buf=await buildExcelGlobal();
+      var sucNorm=sucName(G.centro).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,40);
+      dlBuf(buf,'Efectividad_'+G.centro+'_'+sucNorm+'_'+fecha+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+    else if(mode==='global'){
       setStatus('Generando Excel global…');
       document.getElementById('btnDl').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
       var buf=await buildExcelGlobal();
