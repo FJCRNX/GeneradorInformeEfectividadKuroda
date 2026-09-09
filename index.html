@@ -146,6 +146,9 @@ input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9p
         <button class="btnd zip" id="btnPerSuc">
           <i class="ti ti-file-zip" aria-hidden="true"></i>ZIP por Sucursal
         </button>
+        <button class="btnd" id="btnPorMeses" style="background:linear-gradient(310deg,#6f2dbd,#a663cc);box-shadow:0 4px 10px rgba(111,45,189,.3)">
+          <i class="ti ti-calendar-stats" aria-hidden="true"></i>Generar por Meses
+        </button>
       </div>
       <div class="gen-status" id="genStatus"></div>
     </div>
@@ -221,6 +224,7 @@ var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centr
   document.getElementById('btnPerCentro').addEventListener('click',function(){runGen('soc');});
   document.getElementById('btnPerSuc').addEventListener('click',function(){runGen('suc');});
   document.getElementById('btnAllZip').addEventListener('click',function(){runGen('all');});
+  document.getElementById('btnPorMeses').addEventListener('click',function(){runGen('meses');});
   [0,1,2,3].forEach(function(i){
     document.getElementById('t'+i).addEventListener('click',function(){switchTab(i);});
   });
@@ -948,7 +952,7 @@ async function buildZipPorSucursal(){
 
 // ── Orquestador principal ──
 async function runGen(mode){
-  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip'];
+  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip','btnPorMeses'];
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=true;});
   var origText={};
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b){origText[id]=b.innerHTML;}});
@@ -979,6 +983,12 @@ async function runGen(mode){
       document.getElementById('btnPerSuc').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
       var blob=await buildZipPorSucursal();
       dlBlob(blob,'EfectividadPorSucursal_'+fecha+'.zip');
+    }
+    else if(mode==='meses'){
+      setStatus('Generando Excel por Meses…');
+      document.getElementById('btnPorMeses').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      var buf=await buildExcelPorMeses();
+      dlBuf(buf,'EfectividadPorMeses_'+fecha+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
     else if(mode==='all'){
       document.getElementById('btnAllZip').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
@@ -1223,9 +1233,201 @@ async function buildExcelPorSociedad(){
   return wb.xlsx.writeBuffer();
 }
 
+// ═══════════════════════════════════════════════════════
+// ── EXCEL "POR MESES": Efectividad mensual por Sucursal + Tipo Inventario ──
+// ═══════════════════════════════════════════════════════
+
+// Extrae la clave "YYYY-MM" de la Fecha del Documento (admite Date o texto)
+function monthKeyOf(v){
+  var d=v instanceof Date?v:(v?new Date(v):null);
+  if(!d||isNaN(d.getTime()))return null;
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(key){
+  var p=key.split('-'),d=new Date(+p[0],+p[1]-1,1);
+  var s=d.toLocaleString('es-MX',{month:'short',year:'numeric'}).replace('.','');
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+// Matriz Centro × Mes → % Efectividad (agrupado por Fecha del Documento), con promedios
+function calcMonthlyMatrix(rows){
+  var byCentroMonth={},monthsSet={};
+  rows.forEach(function(r){
+    var mk=monthKeyOf(r['Fecha del Documento']);
+    if(!mk)return;
+    var centro=String(r['Centro']||'(sin dato)');
+    monthsSet[mk]=true;
+    byCentroMonth[centro]=byCentroMonth[centro]||{};
+    byCentroMonth[centro][mk]=byCentroMonth[centro][mk]||[];
+    byCentroMonth[centro][mk].push(r);
+  });
+  var months=Object.keys(monthsSet).sort();
+  var centros=Object.keys(byCentroMonth).sort();
+  var sucursales=centros.map(function(c){
+    var byMonth={},efSum=0,efCount=0;
+    months.forEach(function(mk){
+      var rs=byCentroMonth[c][mk];
+      if(rs&&rs.length){
+        var mm=calcM(rs);
+        byMonth[mk]=mm.efec;efSum+=mm.efec;efCount++;
+      }
+    });
+    return{centro:c,byMonth:byMonth,promedio:efCount?efSum/efCount:null};
+  });
+  var monthAvg={};
+  months.forEach(function(mk){
+    var sum=0,cnt=0;
+    sucursales.forEach(function(s){if(s.byMonth[mk]!==undefined){sum+=s.byMonth[mk];cnt++;}});
+    monthAvg[mk]=cnt?sum/cnt:null;
+  });
+  var grandSum=0,grandCnt=0;
+  sucursales.forEach(function(s){if(s.promedio!==null){grandSum+=s.promedio;grandCnt++;}});
+  return{months:months,sucursales:sucursales,monthAvg:monthAvg,grandAvg:grandCnt?grandSum/grandCnt:null};
+}
+
+// Matriz Centro × Tipo Inventario → suma de Diferencia en Valores (importe)
+function calcTipoInvMatrix(rows){
+  var byCentroTipo={},tiposSet={};
+  rows.forEach(function(r){
+    var centro=String(r['Centro']||'(sin dato)');
+    var tv=r['Tipo Inventario'];
+    var tipo=String(tv!==undefined&&tv!==null&&tv!==''?tv:'(sin dato)');
+    var vd=+r['Diferencia en Valores']||0;
+    tiposSet[tipo]=true;
+    byCentroTipo[centro]=byCentroTipo[centro]||{};
+    byCentroTipo[centro][tipo]=byCentroTipo[centro][tipo]||{vd:0,n:0};
+    byCentroTipo[centro][tipo].vd+=vd;
+    byCentroTipo[centro][tipo].n++;
+  });
+  var tipos=Object.keys(tiposSet).sort();
+  var centros=Object.keys(byCentroTipo).sort();
+  var matriz=centros.map(function(c){
+    var vals={},total=0;
+    tipos.forEach(function(t){var cell=byCentroTipo[c][t];vals[t]=cell?cell.vd:0;total+=vals[t];});
+    return{centro:c,vals:vals,total:total};
+  });
+  var totalPorTipo={};
+  tipos.forEach(function(t){var s=0;matriz.forEach(function(m){s+=m.vals[t]||0;});totalPorTipo[t]=s;});
+  var granTotal=0;
+  matriz.forEach(function(m){granTotal+=m.total;});
+  return{tipos:tipos,matriz:matriz,totalPorTipo:totalPorTipo,granTotal:granTotal};
+}
+
+function buildHojaEfectividadMensual(wb,rows){
+  var d=calcMonthlyMatrix(rows);
+  var ws=wb.addWorksheet('EFECTIVIDAD X MES',{views:[{state:'frozen',ySplit:2,xSplit:2}]});
+  var nCols=2+d.months.length+1;
+  ws.columns=[{width:9},{width:32}].concat(d.months.map(function(){return{width:13};})).concat([{width:14}]);
+
+  var tit=ws.addRow(['EFECTIVIDAD MENSUAL POR SUCURSAL — '+G.file]);
+  ws.mergeCells(1,1,1,nCols);tit.height=28;
+  sc(tit.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
+  tit.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},name:'Arial',size:14};
+
+  var hdrVals=['CENTRO','SUCURSAL'].concat(d.months.map(monthLabel)).concat(['PROMEDIO']);
+  var hdr=ws.addRow(hdrVals);hdr.height=24;
+  for(var c=1;c<=nCols;c++){sc(hdr.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
+
+  function efColors(efInt){
+    return{bg:efInt<50?'FFF8D7DA':efInt<80?'FFFFF3CD':'FFD4EDDA',fc:efInt<50?'FFC0392B':efInt<80?'FFAD6B00':'FF1E8449'};
+  }
+
+  d.sucursales.forEach(function(s,i){
+    var alt=i%2===1,bg=alt?'FFF0F7FF':'FFFFFFFF';
+    var r=ws.addRow([s.centro,sucName(s.centro)]);r.height=18;
+    sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
+    sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
+    d.months.forEach(function(mk,mi){
+      var cell=r.getCell(3+mi);
+      if(s.byMonth[mk]!==undefined){
+        var efInt=Math.trunc(s.byMonth[mk]*100),col=efColors(efInt);
+        sc(cell,col.bg,col.fc,true,'0"%"','right');cell.value=efInt;
+      }else{
+        sc(cell,bg,'FF8392AB',false,null,'right');cell.value='—';
+      }
+    });
+    var pCell=r.getCell(nCols);
+    if(s.promedio!==null){
+      var pInt=Math.trunc(s.promedio*100),pCol=efColors(pInt);
+      sc(pCell,pCol.bg,pCol.fc,true,'0"%"','right');pCell.value=pInt;
+    }else{sc(pCell,bg,'FF8392AB',false,null,'right');pCell.value='—';}
+  });
+
+  var tr=ws.addRow(['PROMEDIO','GENERAL POR MES']);tr.height=22;
+  sc(tr.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
+  sc(tr.getCell(2),'FF0D2137','FFFFFFFF',true,null,'left');
+  d.months.forEach(function(mk,mi){
+    var cell=tr.getCell(3+mi);
+    if(d.monthAvg[mk]!==null){
+      var mInt=Math.trunc(d.monthAvg[mk]*100),mCol=efColors(mInt);
+      sc(cell,mCol.bg,mCol.fc,true,'0"%"','center');cell.value=mInt;
+    }else{sc(cell,'FF0D2137','FFFFFFFF',false,null,'center');cell.value='—';}
+  });
+  var gCell=tr.getCell(nCols);
+  if(d.grandAvg!==null){
+    var gInt=Math.trunc(d.grandAvg*100);
+    sc(gCell,'FF1E3A5F','FFFFFFFF',true,'0"%"','center');gCell.value=gInt;
+  }else{sc(gCell,'FF0D2137','FFFFFFFF',false,null,'center');gCell.value='—';}
+
+  ws.autoFilter={from:{row:2,column:1},to:{row:2,column:nCols}};
+}
+
+function buildHojaTipoInventario(wb,rows){
+  var d=calcTipoInvMatrix(rows);
+  var ws=wb.addWorksheet('POR TIPO INVENTARIO',{views:[{state:'frozen',ySplit:2,xSplit:2}]});
+  var nCols=2+d.tipos.length+1;
+  ws.columns=[{width:9},{width:32}].concat(d.tipos.map(function(){return{width:20};})).concat([{width:18}]);
+
+  var tit=ws.addRow(['DIFERENCIA DE IMPORTE POR SUCURSAL Y TIPO DE INVENTARIO — '+G.file]);
+  ws.mergeCells(1,1,1,nCols);tit.height=28;
+  sc(tit.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
+  tit.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},name:'Arial',size:14};
+
+  var hdrVals=['CENTRO','SUCURSAL'].concat(d.tipos).concat(['TOTAL']);
+  var hdr=ws.addRow(hdrVals);hdr.height=24;
+  for(var c=1;c<=nCols;c++){sc(hdr.getCell(c),'FF1E3A5F','FFFFFFFF',true,null,'center');}
+
+  d.matriz.forEach(function(m,i){
+    var alt=i%2===1,bg=alt?'FFF0F7FF':'FFFFFFFF';
+    var r=ws.addRow([m.centro,sucName(m.centro)]);r.height=18;
+    sc(r.getCell(1),bg,'FF1A252F',true,null,'center');
+    sc(r.getCell(2),bg,'FF1A252F',false,null,'left');
+    d.tipos.forEach(function(t,ti){
+      var v=m.vals[t]||0,cell=r.getCell(3+ti);
+      sc(cell,v<0?'FFFFEAEA':v>0?'FFEAFFEA':bg,v<0?'FFC0392B':v>0?'FF1E8449':'FF1A252F',v!==0,'"$"#,##0.00','right');
+      cell.value=v;
+    });
+    var tCell=r.getCell(nCols);
+    sc(tCell,m.total<0?'FFF8D7DA':'FFD4EDDA',m.total<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');
+    tCell.value=m.total;
+  });
+
+  var tr=ws.addRow(['TOTAL','GENERAL']);tr.height=22;
+  sc(tr.getCell(1),'FF0D2137','FFFFFFFF',true,null,'center');
+  sc(tr.getCell(2),'FF0D2137','FFFFFFFF',true,null,'left');
+  d.tipos.forEach(function(t,ti){
+    var v=d.totalPorTipo[t]||0,cell=tr.getCell(3+ti);
+    sc(cell,'FF1E3A5F','FFFFFFFF',true,'"$"#,##0.00','right');cell.value=v;
+  });
+  var gCell=tr.getCell(nCols);
+  sc(gCell,d.granTotal<0?'FFC0392B':'FF1E8449','FFFFFFFF',true,'"$"#,##0.00','right');gCell.value=d.granTotal;
+
+  ws.autoFilter={from:{row:2,column:1},to:{row:2,column:nCols}};
+}
+
+// Excel único "por Meses": hoja de Efectividad Mensual por Sucursal + hoja por Tipo Inventario
+async function buildExcelPorMeses(){
+  var wb=new ExcelJS.Workbook();
+  wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+  buildHojaEfectividadMensual(wb,G.rows);
+  buildHojaTipoInventario(wb,G.rows);
+  return wb.xlsx.writeBuffer();
+}
+
 initCalTab();
 </script>
 
 </body>
 </html>
+
 
