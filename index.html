@@ -47,6 +47,7 @@ table.dt tr:hover td{background:#f8fafc}
 .btnd:disabled{opacity:.5;cursor:default}
 .btnd.alt{background:linear-gradient(310deg,#1c4a73,#2d6a9f);box-shadow:0 4px 10px rgba(45,106,159,.3)}
 .btnd.zip{background:linear-gradient(310deg,#b8651b,#e67e22);box-shadow:0 4px 10px rgba(230,126,34,.3)}
+.btnd.cxo{background:linear-gradient(310deg,#a8123e,#e0476b);box-shadow:0 4px 10px rgba(224,71,107,.3)}
 .btnr{background:#f8f9fa;border:1px solid #e9ecef;border-radius:10px;color:#67748e;padding:10px 14px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
 .btnr.on{background:#eef4ff;border-color:#c7dbff;color:#2152ff}
 .err{background:#fdecea;border:1px solid #f5b7ae;border-radius:12px;padding:10px 15px;color:#c0392b;font-size:12.5px;margin-top:10px;display:none}
@@ -58,6 +59,12 @@ table.dt tr:hover td{background:#f8fafc}
 .gen-status{font-size:11px;color:#8392ab;margin-top:8px;display:none}
 .gen-status.show{display:block}
 .kpi{background:#fff;border:1px solid #f0f2f5;border-radius:14px;padding:12px;text-align:center;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)}
+.cxo-panel{margin-top:12px;border:1px solid #f6c9d4;background:#fff7f9;border-radius:14px;padding:12px 14px;display:none}
+.cxo-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+.cxo-kpi{background:#fff;border:1px solid #f3dbe1;border-radius:10px;padding:8px 10px;text-align:center}
+.cxo-kpi .l{font-size:10px;color:#8392ab;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.cxo-kpi .v{font-size:15px;font-weight:700;color:#344767;margin-top:2px}
+.cxo-chk{font-size:11.5px;color:#67748e;line-height:1.8}
 input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9px;color:#344767;padding:7px 12px;font-size:12.5px}
 .cal-title{color:#344767;font-size:19px;font-weight:800;letter-spacing:.2px}
 .cal-grid{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid #e3e7ee;border-radius:12px;overflow:hidden;background:#e3e7ee}
@@ -79,7 +86,7 @@ input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9p
       </div>
       <div>
         <div style="color:#344767;font-size:16px;font-weight:700">Efectividad Inventario · Multi-Centro</div>
-        <div style="color:#8392ab;font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP</div>
+        <div style="color:#8392ab;font-size:11.5px;margin-top:2px">Informe completo + Excel Global / por Centro / por Sucursal · descarga ZIP · Un código por otro</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
@@ -149,8 +156,12 @@ input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9p
         <button class="btnd" id="btnPorMeses" style="background:linear-gradient(310deg,#6f2dbd,#a663cc);box-shadow:0 4px 10px rgba(111,45,189,.3)">
           <i class="ti ti-calendar-stats" aria-hidden="true"></i>Generar por Meses
         </button>
+        <button class="btnd cxo" id="btnCxO" title="Excel por tienda con efectividad, marcando el motivo UN CÓDIGO POR OTRO (cobertura ≥ 85%, similitud ≥ 50%); el resto queda sin motivo">
+          <i class="ti ti-arrows-exchange" aria-hidden="true"></i>Un Código por Otro
+        </button>
       </div>
       <div class="gen-status" id="genStatus"></div>
+      <div class="cxo-panel" id="cxoPanel"></div>
     </div>
 
     <div class="tabs">
@@ -209,7 +220,7 @@ function socCode(code){return String(code||'').slice(0,2).toUpperCase();}
 function socName(code){return SOC_MAP[socCode(code)]||socCode(code)||'—';}
 
 // ── ESTADO GLOBAL ──
-var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centros:[],isMulti:false};
+var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centros:[],isMulti:false,wb:null,cxo:null,origHdrs:[],sheet:'',isDif:false};
 
 (function init(){
   var dz=document.getElementById('dz');
@@ -225,6 +236,7 @@ var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centr
   document.getElementById('btnPerSuc').addEventListener('click',function(){runGen('suc');});
   document.getElementById('btnAllZip').addEventListener('click',function(){runGen('all');});
   document.getElementById('btnPorMeses').addEventListener('click',function(){runGen('meses');});
+  document.getElementById('btnCxO').addEventListener('click',function(){runGen('cxo');});
   [0,1,2,3].forEach(function(i){
     document.getElementById('t'+i).addEventListener('click',function(){switchTab(i);});
   });
@@ -239,12 +251,19 @@ function pFile(file){
   rd.onload=function(e){
     try{
       var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
-      var ws=wb.Sheets[wb.SheetNames[0]];
-      var aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // Se trabaja con la hoja "DIF" si existe; si no, con la primera hoja
+      var difName=wb.SheetNames.filter(function(n){return String(n).trim().toUpperCase()==='DIF';})[0];
+      var sheetName=difName||wb.SheetNames[0];
+      var ws=wb.Sheets[sheetName];
+      var startRow=ws&&ws['!ref']?XLSX.utils.decode_range(ws['!ref']).s.r:0;
+      var aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:true});
       if(aoa.length<2){showErr('Archivo sin datos');return;}
       var hdrs=aoa[0].map(String);
-      var rows=aoa.slice(1).filter(function(r){return r.some(function(v){return v!=='';});}).map(function(r){
-        var o={};hdrs.forEach(function(h,i){o[h]=r[i]!==undefined?r[i]:'';});return o;
+      var origHdrs=hdrs.slice();
+      var rows=aoa.slice(1).map(function(r,i){return{r:r||[],n:startRow+i+2};}).filter(function(x){return x.r.some(function(v){return v!=='';});}).map(function(x){
+        var o={};hdrs.forEach(function(h,i){o[h]=x.r[i]!==undefined?x.r[i]:'';});
+        Object.defineProperty(o,'__row',{value:x.n,enumerable:false}); // renglón real de Excel
+        return o;
       });
       // Enriquecer cada renglón con Nombre Sucursal (desde suc.md)
       rows.forEach(function(r){
@@ -258,6 +277,7 @@ function pFile(file){
         else hdrs.unshift('Nombre Sucursal','Sociedad');
       }
       G.hdrs=hdrs;G.rows=rows;G.file=file.name;
+      G.wb=wb;G.cxo=null;G.origHdrs=origHdrs;G.sheet=sheetName;G.isDif=!!difName;
       G.centros=Array.from(new Set(rows.map(function(r){return String(r['Centro']||'');}))).filter(Boolean).sort();
       G.isMulti=G.centros.length>1;
       G.centro=G.centros[0]||'GK';
@@ -333,6 +353,7 @@ function renderAll(){
 
   var ec=m.efec<0.5?'#e74c3c':m.efec<0.8?'#fb6340':'#2dce89';
   document.getElementById('efBadge').innerHTML='<div style="background:'+ec+'14;border:1px solid '+ec+'40;border-radius:12px;padding:8px 18px;text-align:center"><div style="font-size:10px;color:#8392ab;margin-bottom:1px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">EFECTIVIDAD '+(G.isMulti?'GLOBAL':'')+'</div><div style="font-size:24px;font-weight:700;color:'+ec+'">'+pct(m.efec)+'</div></div>';
+  document.getElementById('cxoPanel').style.display='none';
   rFuente();rTablas();rGrupos();rInsights();
 }
 
@@ -344,12 +365,13 @@ function switchTab(idx){
 }
 
 function resetAll(){
-  G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centros:[],isMulti:false};
+  G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centros:[],isMulti:false,wb:null,cxo:null,origHdrs:[],sheet:'',isDif:false};
   document.getElementById('upSection').style.display='block';
   document.getElementById('resSection').style.display='none';
   document.getElementById('efBadge').innerHTML='';
   document.getElementById('fi').value='';
   document.getElementById('genStatus').classList.remove('show');
+  document.getElementById('cxoPanel').style.display='none';
   switchTab(0);
 }
 
@@ -952,7 +974,7 @@ async function buildZipPorSucursal(){
 
 // ── Orquestador principal ──
 async function runGen(mode){
-  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip','btnPorMeses'];
+  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip','btnPorMeses','btnCxO'];
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=true;});
   var origText={};
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b){origText[id]=b.innerHTML;}});
@@ -989,6 +1011,14 @@ async function runGen(mode){
       document.getElementById('btnPorMeses').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
       var buf=await buildExcelPorMeses();
       dlBuf(buf,'EfectividadPorMeses_'+fecha+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+    else if(mode==='cxo'){
+      setStatus('Buscando parejas "Un código por otro"…');
+      document.getElementById('btnCxO').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Analizando…';
+      await new Promise(function(r){setTimeout(r,5);});
+      var outC=await buildExcelCxO();
+      if(outC.zip)dlBlob(outC.blob,outC.name);
+      else dlBuf(outC.buf,outC.name,XL_MIME);
     }
     else if(mode==='all'){
       document.getElementById('btnAllZip').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
@@ -1424,10 +1454,255 @@ async function buildExcelPorMeses(){
   return wb.xlsx.writeBuffer();
 }
 
+// ═══════════════════════════════════════════════════════
+// ── "UN CÓDIGO POR OTRO" (CxO) ──
+// Empareja un SKU con faltante contra otro SKU similar con sobrante.
+// Fuente: hoja "DIF" del archivo (si no existe, la primera hoja).
+// Reglas: cobertura = MIN(|F|,|S|)/MAX(|F|,|S|) ≥ 85% · similitud Dice ≥ 50%
+//         puntuación = similitud + cobertura · asignación voraz (mejor primero)
+//         cada renglón y cada SKU se usa una sola vez · parejas dentro del mismo Centro
+// ═══════════════════════════════════════════════════════
+var CXO_MOTIVO='UN CÓDIGO POR OTRO';
+var CXO_MIN_COV=0.85,CXO_MIN_SIM=0.50,CXO_EPS=1e-9;
+var CXO_STOP={DE:1,DEL:1,LA:1,EL:1,LOS:1,LAS:1,CON:1,PARA:1,POR:1,EN:1,Y:1,MM:1,CM:1,PZA:1,PZ:1};
+var CXO_FMT_QTY='#,##0.000;-#,##0.000';
+var CXO_FMT_MON='"$"#,##0.00;-"$"#,##0.00';
+var CXO_FMT_PCT='0.0%';
+var XL_MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+function cxoNorm(s){
+  return String(s==null?'':s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]+/g,' ').trim();
+}
+// Palabras únicas de la descripción, sin palabras genéricas
+function cxoTokens(s){
+  var seen={},out=[];
+  cxoNorm(s).split(' ').forEach(function(w){if(w&&!CXO_STOP[w]&&!seen[w]){seen[w]=1;out.push(w);}});
+  return out;
+}
+// Similitud Dice = 2 × comunes / (palabras1 + palabras2)
+function cxoDice(a,b){
+  if(!a.length||!b.length)return 0;
+  var sb={},c=0;
+  b.forEach(function(w){sb[w]=1;});
+  a.forEach(function(w){if(sb[w])c++;});
+  return 2*c/(a.length+b.length);
+}
+function cxoNum(v){
+  if(typeof v==='number')return isFinite(v)?v:0;
+  var n=parseFloat(String(v==null?'':v).replace(/[$,\s]/g,''));
+  return isNaN(n)?0:n;
+}
+function cxoHdrKey(h){return String(h||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,'');}
+// Localiza columna por nombre; si no existe, usa la letra indicada (E=4, F=5, J=9, K=10, P=15, S=18)
+function cxoCol(hdrs,names,fallback){
+  var keys=hdrs.map(cxoHdrKey);
+  for(var i=0;i<names.length;i++){var ix=keys.indexOf(names[i]);if(ix>=0)return ix;}
+  return (fallback!=null&&fallback<hdrs.length)?fallback:-1;
+}
+
+// Lee la hoja DIF (o la primera) conservando el número de renglón real de Excel
+function cxoSource(){
+  if(!G.rows.length)throw new Error('Carga primero un archivo.');
+  var hdrs=G.origHdrs;
+  return{
+    sheet:G.sheet,isDif:G.isDif,hdrs:hdrs,
+    rows:G.rows.map(function(o){
+      return{excelRow:o.__row,obj:o,vals:hdrs.map(function(h){return o[h]!==undefined?o[h]:'';})};
+    })
+  };
+}
+
+function cxoMatch(src){
+  var h=src.hdrs;
+  var C={
+    code:cxoCol(h,['CODIGODEMATERIAL'],4),
+    desc:cxoCol(h,['DESCRIPCIONDELMATERIAL'],5),
+    dq:cxoCol(h,['DIFERENCIAENCANTIDAD'],9),
+    dv:cxoCol(h,['DIFERENCIAENVALORES'],10),
+    mot:cxoCol(h,['DESCRIPMOTIVODEDIFERENCIA'],15),
+    ip:cxoCol(h,['IMPORTEDIFERENCIAPVMENCONIVA'],18),
+    centro:cxoCol(h,['CENTRO'],null)
+  };
+  var faltan=[];
+  if(C.code<0)faltan.push('Código de Material (E)');
+  if(C.desc<0)faltan.push('Descripción del Material (F)');
+  if(C.dq<0)faltan.push('Diferencia en Cantidad (J)');
+  if(C.dv<0)faltan.push('Diferencia en Valores (K)');
+  if(faltan.length)throw new Error('Faltan columnas en la hoja "'+src.sheet+'": '+faltan.join(', '));
+
+  // 1. Solo renglones con Diferencia en Cantidad ≠ 0, agrupados por Centro
+  var groups={},nAn=0,nF=0,nS=0;
+  src.rows.forEach(function(r){
+    var dq=cxoNum(r.vals[C.dq]);
+    if(dq===0)return;
+    nAn++;
+    var it={
+      r:r,dq:dq,dv:cxoNum(r.vals[C.dv]),
+      code:String(r.vals[C.code]).trim(),
+      desc:String(r.vals[C.desc]),
+      centro:C.centro>=0?String(r.vals[C.centro]).trim():''
+    };
+    it.tok=cxoTokens(it.desc);
+    var g=groups[it.centro]||(groups[it.centro]={F:[],S:[]});
+    if(dq<0){g.F.push(it);nF++;}else{g.S.push(it);nS++;}
+  });
+
+  // 2-5. Candidatos: faltante × sobrante, cobertura ≥ 85% y similitud ≥ 50%
+  var cands=[];
+  Object.keys(groups).forEach(function(k){
+    var g=groups[k];
+    g.F.forEach(function(f){
+      var af=Math.abs(f.dq);
+      g.S.forEach(function(s){
+        if(f.code&&f.code===s.code)return; // mismo SKU no es "un código por otro"
+        var as=Math.abs(s.dq);
+        var cov=Math.min(af,as)/Math.max(af,as);
+        if(cov<CXO_MIN_COV-CXO_EPS)return;
+        var sim=cxoDice(f.tok,s.tok);
+        if(sim<CXO_MIN_SIM-CXO_EPS)return;
+        cands.push({f:f,s:s,cov:cov,sim:sim,score:sim+cov});
+      });
+    });
+  });
+
+  // 6. Mayor puntuación primero; cada renglón y SKU solo una vez
+  cands.sort(function(a,b){
+    return (b.score-a.score)||(b.sim-a.sim)
+      ||((Math.abs(b.f.dv)+Math.abs(b.s.dv))-(Math.abs(a.f.dv)+Math.abs(a.s.dv)))
+      ||(a.f.r.excelRow-b.f.r.excelRow)||(a.s.r.excelRow-b.s.r.excelRow);
+  });
+  var usedRow={},usedSku={},pairs=[];
+  function skuKey(it){return it.code?(it.centro+'|'+it.code):('#'+it.r.excelRow);}
+  cands.forEach(function(c){
+    var kf=skuKey(c.f),ks=skuKey(c.s);
+    if(usedRow[c.f.r.excelRow]||usedRow[c.s.r.excelRow]||usedSku[kf]||usedSku[ks])return;
+    usedRow[c.f.r.excelRow]=1;usedRow[c.s.r.excelRow]=1;
+    usedSku[kf]=1;usedSku[ks]=1;
+    pairs.push(c);
+  });
+  pairs.forEach(function(p,i){p.id='CxO-'+String(i+1).padStart(3,'0');});
+  return{C:C,pairs:pairs,nAn:nAn,nF:nF,nS:nS,nCands:cands.length};
+}
+
+// Totales y validaciones obligatorias
+function cxoStats(res){
+  var rowSeen={},skus={},dupRows=0,minCov=null,minSim=null,neto=0,abs=0,badCov=0,badSign=0;
+  res.pairs.forEach(function(p){
+    [p.f,p.s].forEach(function(it){
+      if(rowSeen[it.r.excelRow])dupRows++;
+      rowSeen[it.r.excelRow]=1;
+      if(it.code)skus[it.code]=1;
+    });
+    if(p.cov<CXO_MIN_COV-CXO_EPS)badCov++;
+    if(!(p.f.dq<0&&p.s.dq>0))badSign++;
+    minCov=minCov===null?p.cov:Math.min(minCov,p.cov);
+    minSim=minSim===null?p.sim:Math.min(minSim,p.sim);
+    neto+=p.f.dv+p.s.dv;
+    abs+=Math.abs(p.f.dv)+Math.abs(p.s.dv);
+  });
+  return{
+    nPairs:res.pairs.length,nRows:Object.keys(rowSeen).length,nSkus:Object.keys(skus).length,
+    minCov:minCov,minSim:minSim,neto:neto,abs:abs,
+    dupRows:dupRows,badCov:badCov,badSign:badSign,nMot:0
+  };
+}
+
+// Copia de los renglones con el motivo aplicado:
+//  · renglones emparejados → "UN CÓDIGO POR OTRO"
+//  · resto → motivo en blanco
+var CXO_LIMPIAR_OTROS=true;
+function cxoApplyMotivo(src,res){
+  var motKey=res.C.mot>=0?src.hdrs[res.C.mot]:'Descrip Motivo de Diferencia';
+  if(G.hdrs.indexOf(motKey)<0)G.hdrs.push(motKey);
+  var marcados=new Map();
+  res.pairs.forEach(function(p){marcados.set(p.f.r.obj,1);marcados.set(p.s.r.obj,1);});
+  var n=0;
+  var rows=G.rows.map(function(o){
+    var c=Object.assign({},o);
+    if(marcados.has(o)){c[motKey]=CXO_MOTIVO;n++;}
+    else if(CXO_LIMPIAR_OTROS){c[motKey]='';}
+    return c;
+  });
+  return{rows:rows,nMot:n};
+}
+
+// Excel por tienda (FUENTE / TABLAS / GRUPOS / INSIGHTS con efectividad) usando el motivo CxO.
+// Un solo centro → un .xlsx · varios centros → ZIP con un .xlsx por sucursal
+async function buildExcelCxO(){
+  var src=cxoSource();
+  var res=cxoMatch(src);
+  var st=cxoStats(res);
+  var ap=cxoApplyMotivo(src,res);
+  st.nMot=ap.nMot;
+  G.cxo={src:src,res:res,st:st};
+  renderCxoPanel();
+
+  var rows=ap.rows,fecha=new Date().toISOString().slice(0,10);
+  var centros=Array.from(new Set(rows.map(function(r){return String(r['Centro']||'');}))).filter(Boolean).sort();
+  if(!centros.length)centros=[''];
+
+  function subOf(c){return c?rows.filter(function(r){return String(r['Centro'])===c;}):rows;}
+  function fname(c){
+    var cc=c||G.centro;
+    var sucNorm=sucName(cc).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,40);
+    return 'Efectividad_CxO_'+cc+'_'+sucNorm+'_'+fecha+'.xlsx';
+  }
+  async function wbFor(c){
+    var sub=subOf(c),cc=c||G.centro;
+    var wb=new ExcelJS.Workbook();
+    wb.creator='Kuroda Efectividad Dashboard';wb.created=new Date();
+    buildContextSheets(wb,{rows:sub,m:calcM(sub),centro:cc,labelTitulo:cc+' — '+sucName(cc)});
+    return wb.xlsx.writeBuffer();
+  }
+
+  if(centros.length===1){
+    setStatus('Generando Excel de '+(centros[0]||G.centro)+'…');
+    return{zip:false,buf:await wbFor(centros[0]),name:fname(centros[0])};
+  }
+  var zip=new JSZip();
+  for(var i=0;i<centros.length;i++){
+    var c=centros[i];
+    setStatus('Generando '+(i+1)+'/'+centros.length+': '+c+' — '+sucName(c));
+    await new Promise(function(r){setTimeout(r,5);});
+    var folder=socCode(c)+'_'+socName(c).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,30);
+    zip.file(folder+'/'+fname(c),await wbFor(c));
+  }
+  setStatus('Comprimiendo ZIP…');
+  return{zip:true,blob:await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}}),name:'Efectividad_CxO_PorSucursal_'+fecha+'.zip'};
+}
+
+// Panel de resultados en pantalla
+function renderCxoPanel(){
+  var p=document.getElementById('cxoPanel');
+  if(!G.cxo){p.style.display='none';return;}
+  var st=G.cxo.st,res=G.cxo.res,src=G.cxo.src;
+  var pc=function(v){return v===null?'—':(v*100).toFixed(1)+'%';};
+  var okAll=st.badCov===0&&st.badSign===0&&st.dupRows===0&&(st.nPairs===0||st.nMot===st.nRows);
+  var kp=[
+    ['Parejas',st.nPairs,'#344767'],
+    ['Renglones',st.nRows,'#344767'],
+    ['SKUs distintos',st.nSkus,'#344767'],
+    ['Cobertura mín.',pc(st.minCov),'#344767'],
+    ['Importe neto',money(st.neto),negC(st.neto)],
+    ['Importe absoluto',money(st.abs),'#344767']
+  ];
+  p.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'
+    +'<div style="font-size:12.5px;font-weight:700;color:#8e1538"><i class="ti ti-arrows-exchange" aria-hidden="true" style="margin-right:5px"></i>Un código por otro</div>'
+    +'<div style="font-size:11px;color:#8392ab">Hoja: <b>'+esc(src.sheet)+'</b>'+(src.isDif?'':' (sin hoja DIF, se usó la primera)')+' · '+res.nAn+' renglones con diferencia · '+res.nCands+' candidatas</div></div>'
+    +'<div class="cxo-kpis">'+kp.map(function(k){return '<div class="cxo-kpi"><div class="l">'+k[0]+'</div><div class="v" style="color:'+k[2]+'">'+k[1]+'</div></div>';}).join('')+'</div>'
+    +(st.nPairs
+      ?'<div class="cxo-chk" style="color:'+(okAll?'#1e8449':'#c0392b')+'">'
+        +(okAll?'✔':'✖')+' Sin duplicados · '+(st.badCov===0?'ninguna pareja con cobertura &lt; 85%':st.badCov+' parejas con cobertura &lt; 85%')
+        +' · todas con faltante y sobrante · '+st.nMot+'/'+st.nRows+' renglones con "'+CXO_MOTIVO+'" · resto sin motivo</div>'
+      :'<div class="cxo-chk" style="color:#c0392b">No se encontraron parejas que cumplan cobertura ≥ 85% y similitud ≥ 50%. El Excel se generó con todos los motivos en blanco.</div>');
+  p.style.display='block';
+}
+
 initCalTab();
 </script>
 
 </body>
 </html>
+
 
 
