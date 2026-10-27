@@ -441,6 +441,7 @@ function rTablas(){
   var totDV=ms.reduce(function(a,e){return a+e[1].dv;},0);
   var totIP=ms.reduce(function(a,e){return a+e[1].ip;},0);
 
+  var impT=impFaltSobr(consolidarFuente(G.rows,G.hdrs)); // sobre FUENTE 2 (totalizada por código)
   var titleLabel=G.isMulti?'CONSOLIDADO ('+G.centros.length+' centros)':G.centro+' — '+sucName(G.centro)+' · '+G.suc;
 
   var left='<div style="background:linear-gradient(310deg,#2152ff,#21d4fd);border-radius:14px 14px 0 0;padding:12px 16px;text-align:center;box-shadow:0 20px 27px 0 rgba(0,0,0,.04)">'
@@ -464,7 +465,8 @@ function rTablas(){
     +'<div class="glass" style="padding:13px 16px">'
     +'<div class="sec">Diferencia en Valor</div>'
     +[['Valor Cant Contada',money(m.vCnt),'#344767'],['Valor Exist Teórica',money(m.vTeo),'#344767'],
-      ['Diferencia Neta',money(m.vDiff),negC(m.vDiff)],
+      ['Importe Total Faltante',money(impT.falt),'#e74c3c'],['Importe Total Sobrante',money(impT.sobr),'#2dce89'],
+      ['Diferencia Neta',money(impT.neto),negC(impT.neto)],
     ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')+'</div>';
 
   // Mini desglose por centro si es multi
@@ -650,9 +652,86 @@ function sc(cell,bg,fc,bold,numFmt,ha){
   if(numFmt)cell.numFmt=numFmt;
 }
 
-// Genera 4 hojas (FUENTE/TABLAS/GRUPOS/INSIGHTS) en wb, con sufijos para nombres únicos
+// ═══════════════════════════════════════════════════════
+// ── FUENTE 2: renglones totalizados por Centro + Código de Material (sin códigos duplicados) ──
+// Columnas de cantidad/existencia/valor/importe se SUMAN; el resto toma el valor
+// (si hay varios distintos, p.ej. lotes o ubicaciones, se listan separados por coma).
+// ═══════════════════════════════════════════════════════
+function f2EsSuma(h){
+  var k=String(h||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]/g,'');
+  return /CANTIDAD|EXISTENCIA|VALOR|IMPORTE/.test(k)&&!/PRECIO/.test(k);
+}
+function consolidarFuente(rows,hdrs){
+  var map={},grupos=[];
+  rows.forEach(function(r,i){
+    var code=String(r['Codigo de Material']==null?'':r['Codigo de Material']).trim();
+    var key=code?String(r['Centro']==null?'':r['Centro']).trim()+'|'+code:'#'+i;
+    if(!map[key]){map[key]={members:[]};grupos.push(map[key]);}
+    map[key].members.push(r);
+  });
+  return grupos.map(function(g){
+    var o={};
+    hdrs.forEach(function(h){
+      if(f2EsSuma(h)){
+        var sum=0,any=false;
+        g.members.forEach(function(m){var v=m[h];if(v!==''&&v!=null&&!isNaN(+v)){sum+=+v;any=true;}});
+        o[h]=any?Math.round(sum*1e6)/1e6:g.members[0][h];
+      }else{
+        var vals=[],seen={};
+        g.members.forEach(function(m){
+          var v=m[h];if(v===''||v==null)return;
+          var k=v instanceof Date?'D'+v.getTime():String(v);
+          if(!seen[k]){seen[k]=1;vals.push(v);}
+        });
+        o[h]=vals.length===0?'':vals.length===1?vals[0]
+          :vals.map(function(v){return v instanceof Date?v.toLocaleDateString('es-MX'):String(v);}).join(', ').slice(0,250);
+      }
+    });
+    return{obj:o,members:g.members};
+  });
+}
+// Importe total faltante (suma de Dif. en Valores < 0) y sobrante (> 0) sobre FUENTE 2
+function impFaltSobr(cons){
+  var f=0,s=0;
+  cons.forEach(function(c){var v=+c.obj['Diferencia en Valores']||0;if(v<0)f+=v;else s+=v;});
+  return{falt:f,sobr:s,neto:f+s};
+}
+function buildFuente2Sheet(wb,name,cons,hdrs){
+  var ws=wb.addWorksheet(name,{views:[{state:'frozen',ySplit:1}]});
+  var DC=new Set(['Diferencia en Cantidad','Diferencia en Valores','Importe Diferencia PV Men con IVA']);
+  var cols=hdrs.concat(['Renglones Consolidados']);
+  ws.columns=cols.map(function(h){
+    var w=h==='Descripcion del Material'?42:h==='Nombre Sucursal'?30:h==='Renglones Consolidados'?13:Math.min(Math.max(String(h).length*0.8,10),22);
+    return{header:h,key:h,width:w};
+  });
+  var hRow=ws.getRow(1);hRow.height=30;
+  cols.forEach(function(h,i){
+    var c=hRow.getCell(i+1);c.value=h;
+    sc(c,i===hdrs.length?'FF6F2DBD':'FF1E3A5F','FFFFFFFF',true,null,'center');
+    c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+  });
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:cols.length}};
+  cons.forEach(function(cg,ri){
+    var row=cg.obj,alt=ri%2===1;
+    var esCxO2=String(row['Descrip Motivo de Diferencia']||'').indexOf('(2)')>=0;
+    var vals=hdrs.map(function(h){var v=row[h];return f2EsSuma(h)&&v!==''&&!isNaN(+v)?+v:(v!==undefined?v:'');}).concat([cg.members.length]);
+    var dr=ws.addRow(vals);dr.height=15;
+    cols.forEach(function(h,ci){
+      var cell=dr.getCell(ci+1),val=+row[h],num=f2EsSuma(h)||ci===hdrs.length;
+      var neg=DC.has(h)&&val<0,pos=(h==='Diferencia en Cantidad'||h==='Diferencia en Valores')&&val>0;
+      var bg=esCxO2?CXO_AMARILLO:neg?'FFFFEAEA':pos?'FFEAFFEA':alt?'FFEBF4FF':'FFFFFFFF';
+      var fc=neg?'FFC0392B':pos?'FF1E8449':'FF1A252F';
+      sc(cell,bg,fc,neg||pos,ci===hdrs.length?'0':(f2EsSuma(h)?'#,##0.000':null),num?'right':'left');
+    });
+  });
+  return ws;
+}
+
+// Genera hojas (FUENTE/FUENTE 2/TABLAS/GRUPOS/INSIGHTS) en wb, con sufijos para nombres únicos
 function buildContextSheets(wb,ctx){
   var rows=ctx.rows,m=ctx.m,hdrs=G.hdrs;
+  var cons=consolidarFuente(rows,hdrs); // FUENTE 2
+  var imp=impFaltSobr(cons);
   var sufijo=ctx.sufijo||'';
   var labelTitulo=ctx.labelTitulo||(ctx.centro+' — '+sucName(ctx.centro));
 
@@ -675,17 +754,21 @@ function buildContextSheets(wb,ctx){
 
   rows.forEach(function(row,ri){
     var alt=ri%2===1;
+    var esCxO2=String(row['Descrip Motivo de Diferencia']||'').indexOf('(2)')>=0; // UN CÓDIGO POR OTRO (2) → renglón amarillo
     var vals=hdrs.map(function(h){return NC.has(h)?(isNaN(+row[h])?row[h]:+row[h]):(row[h]!==undefined?row[h]:'');});
     var dr=wsF.addRow(vals);
     dr.height=15;
     hdrs.forEach(function(h,ci){
       var cell=dr.getCell(ci+1),val=+row[h];
       var neg=DC.has(h)&&val<0,pos=(h==='Diferencia en Cantidad'||h==='Diferencia en Valores')&&val>0;
-      var bg=neg?'FFFFEAEA':pos?'FFEAFFEA':alt?'FFEBF4FF':'FFFFFFFF';
+      var bg=esCxO2?CXO_AMARILLO:neg?'FFFFEAEA':pos?'FFEAFFEA':alt?'FFEBF4FF':'FFFFFFFF';
       var fc=neg?'FFC0392B':pos?'FF1E8449':'FF1A252F';
       sc(cell,bg,fc,neg||pos,NC.has(h)?'#,##0.000':null,NC.has(h)?'right':'left');
     });
   });
+
+  // ── FUENTE 2 (totalizada por código) ──
+  buildFuente2Sheet(wb,('FUENTE 2'+(sufijo?' '+sufijo:'')).slice(0,31),cons,hdrs);
 
   // ── TABLAS ──
   var nameT=('TABLAS'+(sufijo?' '+sufijo:'')).slice(0,31);
@@ -737,7 +820,9 @@ function buildContextSheets(wb,ctx){
   addSecHdr('DIFERENCIA EN VALOR');
   addKpi('Valor Cant Contada',m.vCnt,'FFF0F7FF','FF1A252F','"$"#,##0.00');
   addKpi('Valor Exist Teórica',m.vTeo,'FFF0F7FF','FF1A252F','"$"#,##0.00');
-  addKpi('Diferencia Neta',m.vDiff,m.vDiff<0?'FFF8D7DA':'FFD4EDDA',m.vDiff<0?'FFC0392B':'FF1E8449','"$"#,##0.00');
+  addKpi('Importe Total Faltante',imp.falt,'FFFFEAEA','FFC0392B','"$"#,##0.00');
+  addKpi('Importe Total Sobrante',imp.sobr,'FFEAFFEA','FF1E8449','"$"#,##0.00');
+  addKpi('Diferencia Neta',imp.neto,imp.neto<0?'FFF8D7DA':'FFD4EDDA',imp.neto<0?'FFC0392B':'FF1E8449','"$"#,##0.00');
   wsT.addRow([]);
 
   // ── EFECTIVIDAD POR ALMACÉN (tabla nueva) — % entero TRUNCADO, sin redondear ──
@@ -783,7 +868,7 @@ function buildContextSheets(wb,ctx){
   var totIP=0;
   Object.entries(m.mots).forEach(function(e){
     var k=e[0],v=e[1];
-    var bg=v.dv<0?'FFFFEAEA':v.dv>0?'FFEAFFEA':'FFF5F5F5';
+    var bg=k.indexOf('(2)')>=0?CXO_AMARILLO:v.dv<0?'FFFFEAEA':v.dv>0?'FFEAFFEA':'FFF5F5F5';
     sc(gcell(mr,5),bg,'FF1A252F',false,null,'left');gcell(mr,5).value=k;
     sc(gcell(mr,6),bg,v.dv<0?'FFC0392B':'FF1E8449',true,'"$"#,##0.00','right');gcell(mr,6).value=v.dv;
     if(esMotivoTotalizableIP(k)&&v.dv<=0){
@@ -1464,6 +1549,10 @@ async function buildExcelPorMeses(){
 // ═══════════════════════════════════════════════════════
 var CXO_MOTIVO='UN CÓDIGO POR OTRO';
 var CXO_MIN_COV=0.85,CXO_MIN_SIM=0.50,CXO_EPS=1e-9;
+// 2ª pasada "desgranando" la descripción: similitud ≥ 50% y el sobrante cubre ±65% del faltante
+var CXO_MOTIVO2='UN CÓDIGO POR OTRO (2)';
+var CXO_MIN_COV2=0.65,CXO_MIN_SIM2=0.50;
+var CXO_AMARILLO='FFFFFF00';
 var CXO_STOP={DE:1,DEL:1,LA:1,EL:1,LOS:1,LAS:1,CON:1,PARA:1,POR:1,EN:1,Y:1,MM:1,CM:1,PZA:1,PZ:1};
 var CXO_FMT_QTY='#,##0.000;-#,##0.000';
 var CXO_FMT_MON='"$"#,##0.00;-"$"#,##0.00';
@@ -1477,6 +1566,14 @@ function cxoNorm(s){
 function cxoTokens(s){
   var seen={},out=[];
   cxoNorm(s).split(' ').forEach(function(w){if(w&&!CXO_STOP[w]&&!seen[w]){seen[w]=1;out.push(w);}});
+  return out;
+}
+// Descripción "desgranada": separa letras de números (51X51MM → 51 X 51 MM) y quita genéricos y la X de medidas
+function cxoTokens2(s){
+  var seen={},out=[];
+  cxoNorm(s).replace(/([A-Z])(\d)/g,'$1 $2').replace(/(\d)([A-Z])/g,'$1 $2').split(' ').forEach(function(w){
+    if(w&&w!=='X'&&!CXO_STOP[w]&&!seen[w]){seen[w]=1;out.push(w);}
+  });
   return out;
 }
 // Similitud Dice = 2 × comunes / (palabras1 + palabras2)
@@ -1500,14 +1597,15 @@ function cxoCol(hdrs,names,fallback){
   return (fallback!=null&&fallback<hdrs.length)?fallback:-1;
 }
 
-// Lee la hoja DIF (o la primera) conservando el número de renglón real de Excel
+// Fuente de Un código por otro = FUENTE 2 (renglones totalizados por Centro + Código)
 function cxoSource(){
   if(!G.rows.length)throw new Error('Carga primero un archivo.');
   var hdrs=G.origHdrs;
+  var cons=consolidarFuente(G.rows,G.hdrs);
   return{
-    sheet:G.sheet,isDif:G.isDif,hdrs:hdrs,
-    rows:G.rows.map(function(o){
-      return{excelRow:o.__row,obj:o,vals:hdrs.map(function(h){return o[h]!==undefined?o[h]:'';})};
+    sheet:G.sheet,isDif:G.isDif,hdrs:hdrs,nOrig:G.rows.length,
+    rows:cons.map(function(cg,i){
+      return{excelRow:i+2,obj:cg.obj,members:cg.members,vals:hdrs.map(function(h){return cg.obj[h]!==undefined?cg.obj[h]:'';})};
     })
   };
 }
@@ -1543,45 +1641,59 @@ function cxoMatch(src){
       centro:C.centro>=0?String(r.vals[C.centro]).trim():''
     };
     it.tok=cxoTokens(it.desc);
+    it.tok2=cxoTokens2(it.desc);
     var g=groups[it.centro]||(groups[it.centro]={F:[],S:[]});
     if(dq<0){g.F.push(it);nF++;}else{g.S.push(it);nS++;}
   });
 
-  // 2-5. Candidatos: faltante × sobrante, cobertura ≥ 85% y similitud ≥ 50%
-  var cands=[];
-  Object.keys(groups).forEach(function(k){
-    var g=groups[k];
-    g.F.forEach(function(f){
-      var af=Math.abs(f.dq);
-      g.S.forEach(function(s){
-        if(f.code&&f.code===s.code)return; // mismo SKU no es "un código por otro"
-        var as=Math.abs(s.dq);
-        var cov=Math.min(af,as)/Math.max(af,as);
-        if(cov<CXO_MIN_COV-CXO_EPS)return;
-        var sim=cxoDice(f.tok,s.tok);
-        if(sim<CXO_MIN_SIM-CXO_EPS)return;
-        cands.push({f:f,s:s,cov:cov,sim:sim,score:sim+cov});
+  var usedRow={},usedSku={};
+  function skuKey(it){return it.code?(it.centro+'|'+it.code):('#'+it.r.excelRow);}
+
+  // Una pasada: candidatos faltante × sobrante que cumplen cobertura y similitud,
+  // mayor puntuación primero; cada renglón y SKU solo una vez (compartido entre pasadas)
+  function pasada(nivel,minCov,minSim,tokKey){
+    var cands=[];
+    Object.keys(groups).forEach(function(k){
+      var g=groups[k];
+      g.F.forEach(function(f){
+        if(usedRow[f.r.excelRow]||usedSku[skuKey(f)])return;
+        var af=Math.abs(f.dq);
+        g.S.forEach(function(s){
+          if(f.code&&f.code===s.code)return; // mismo SKU no es "un código por otro"
+          if(usedRow[s.r.excelRow]||usedSku[skuKey(s)])return;
+          var as=Math.abs(s.dq);
+          var cov=Math.min(af,as)/Math.max(af,as);
+          if(cov<minCov-CXO_EPS)return;
+          var sim=cxoDice(f[tokKey],s[tokKey]);
+          if(sim<minSim-CXO_EPS)return;
+          cands.push({f:f,s:s,cov:cov,sim:sim,score:sim+cov,nivel:nivel,minCov:minCov,minSim:minSim});
+        });
       });
     });
-  });
+    cands.sort(function(a,b){
+      return (b.score-a.score)||(b.sim-a.sim)
+        ||((Math.abs(b.f.dv)+Math.abs(b.s.dv))-(Math.abs(a.f.dv)+Math.abs(a.s.dv)))
+        ||(a.f.r.excelRow-b.f.r.excelRow)||(a.s.r.excelRow-b.s.r.excelRow);
+    });
+    var out=[];
+    cands.forEach(function(c){
+      var kf=skuKey(c.f),ks=skuKey(c.s);
+      if(usedRow[c.f.r.excelRow]||usedRow[c.s.r.excelRow]||usedSku[kf]||usedSku[ks])return;
+      usedRow[c.f.r.excelRow]=1;usedRow[c.s.r.excelRow]=1;
+      usedSku[kf]=1;usedSku[ks]=1;
+      out.push(c);
+    });
+    return{pairs:out,nCands:cands.length};
+  }
 
-  // 6. Mayor puntuación primero; cada renglón y SKU solo una vez
-  cands.sort(function(a,b){
-    return (b.score-a.score)||(b.sim-a.sim)
-      ||((Math.abs(b.f.dv)+Math.abs(b.s.dv))-(Math.abs(a.f.dv)+Math.abs(a.s.dv)))
-      ||(a.f.r.excelRow-b.f.r.excelRow)||(a.s.r.excelRow-b.s.r.excelRow);
-  });
-  var usedRow={},usedSku={},pairs=[];
-  function skuKey(it){return it.code?(it.centro+'|'+it.code):('#'+it.r.excelRow);}
-  cands.forEach(function(c){
-    var kf=skuKey(c.f),ks=skuKey(c.s);
-    if(usedRow[c.f.r.excelRow]||usedRow[c.s.r.excelRow]||usedSku[kf]||usedSku[ks])return;
-    usedRow[c.f.r.excelRow]=1;usedRow[c.s.r.excelRow]=1;
-    usedSku[kf]=1;usedSku[ks]=1;
-    pairs.push(c);
-  });
-  pairs.forEach(function(p,i){p.id='CxO-'+String(i+1).padStart(3,'0');});
-  return{C:C,pairs:pairs,nAn:nAn,nF:nF,nS:nS,nCands:cands.length};
+  // Pasada 1 (actual): cobertura ≥ 85%, similitud ≥ 50% sobre palabras completas
+  var p1=pasada(1,CXO_MIN_COV,CXO_MIN_SIM,'tok');
+  p1.pairs.forEach(function(p,i){p.id='CxO-'+String(i+1).padStart(3,'0');});
+  // Pasada 2: solo renglones que quedaron libres; descripción desgranada, similitud ≥ 50%, cobertura ±65%
+  var p2=pasada(2,CXO_MIN_COV2,CXO_MIN_SIM2,'tok2');
+  p2.pairs.forEach(function(p,i){p.id='CxO2-'+String(i+1).padStart(3,'0');});
+  var pairs=p1.pairs.concat(p2.pairs);
+  return{C:C,pairs:pairs,pairs1:p1.pairs,pairs2:p2.pairs,nAn:nAn,nF:nF,nS:nS,nCands:p1.nCands,nCands2:p2.nCands};
 }
 
 // Totales y validaciones obligatorias
@@ -1593,7 +1705,7 @@ function cxoStats(res){
       rowSeen[it.r.excelRow]=1;
       if(it.code)skus[it.code]=1;
     });
-    if(p.cov<CXO_MIN_COV-CXO_EPS)badCov++;
+    if(p.cov<p.minCov-CXO_EPS||p.sim<p.minSim-CXO_EPS)badCov++;
     if(!(p.f.dq<0&&p.s.dq>0))badSign++;
     minCov=minCov===null?p.cov:Math.min(minCov,p.cov);
     minSim=minSim===null?p.sim:Math.min(minSim,p.sim);
@@ -1601,25 +1713,49 @@ function cxoStats(res){
     abs+=Math.abs(p.f.dv)+Math.abs(p.s.dv);
   });
   return{
-    nPairs:res.pairs.length,nRows:Object.keys(rowSeen).length,nSkus:Object.keys(skus).length,
+    nPairs:res.pairs.length,nPairs1:res.pairs1.length,nPairs2:res.pairs2.length,nRows:Object.keys(rowSeen).length,nSkus:Object.keys(skus).length,
     minCov:minCov,minSim:minSim,neto:neto,abs:abs,
     dupRows:dupRows,badCov:badCov,badSign:badSign,nMot:0
   };
 }
 
 // Copia de los renglones con el motivo aplicado:
-//  · renglones emparejados → "UN CÓDIGO POR OTRO"
-//  · resto → motivo en blanco
+//  · renglones emparejados → "UN CÓDIGO POR OTRO" (pasada 1) o "UN CÓDIGO POR OTRO (2)" (pasada 2, en amarillo)
+//  · mismo código repetido en FUENTE que se compensa entre sus renglones → mismo motivo
+//  · renglones con diferencia 0 y resto → motivo en blanco
 var CXO_LIMPIAR_OTROS=true;
 function cxoApplyMotivo(src,res){
   var motKey=res.C.mot>=0?src.hdrs[res.C.mot]:'Descrip Motivo de Diferencia';
   if(G.hdrs.indexOf(motKey)<0)G.hdrs.push(motKey);
-  var marcados=new Map();
-  res.pairs.forEach(function(p){marcados.set(p.f.r.obj,1);marcados.set(p.s.r.obj,1);});
-  var n=0;
+  var dqKey=src.hdrs[res.C.dq];
+  function dqOf(m){return cxoNum(m[dqKey]);}
+  var marcados=new Map(),codPareja=new Set();
+  // a) Código emparejado con otro código (FUENTE 2): se marcan sus renglones de FUENTE con diferencia ≠ 0
+  res.pairs.forEach(function(p){
+    [p.f,p.s].forEach(function(it){
+      codPareja.add(it.r);
+      it.r.members.forEach(function(m){if(dqOf(m)!==0)marcados.set(m,p.nivel);});
+    });
+  });
+  // b) Mismo código y descripción repetido en FUENTE con faltante y sobrante que se compensan entre sí
+  //    (en FUENTE 2 quedan netos). Se valida con la misma cobertura: ≥ 85% → motivo · ±65% → motivo (2)
+  var nInt=0,nInt2=0;
+  src.rows.forEach(function(r){
+    if(r.members.length<2||codPareja.has(r))return;
+    var f=0,s=0;
+    r.members.forEach(function(m){var q=dqOf(m);if(q<0)f+=-q;else s+=q;});
+    if(!f||!s)return;
+    var cov=Math.min(f,s)/Math.max(f,s),nivel=0;
+    if(cov>=CXO_MIN_COV-CXO_EPS)nivel=1;else if(cov>=CXO_MIN_COV2-CXO_EPS)nivel=2;
+    if(!nivel)return;
+    if(nivel===1)nInt++;else nInt2++;
+    r.members.forEach(function(m){if(dqOf(m)!==0)marcados.set(m,nivel);});
+  });
+  res.nInt=nInt;res.nInt2=nInt2;
+  var n=res.pairs.length*2; // códigos (renglones de FUENTE 2) marcados
   var rows=G.rows.map(function(o){
     var c=Object.assign({},o);
-    if(marcados.has(o)){c[motKey]=CXO_MOTIVO;n++;}
+    if(marcados.has(o)){c[motKey]=marcados.get(o)===2?CXO_MOTIVO2:CXO_MOTIVO;}
     else if(CXO_LIMPIAR_OTROS){c[motKey]='';}
     return c;
   });
@@ -1679,7 +1815,8 @@ function renderCxoPanel(){
   var pc=function(v){return v===null?'—':(v*100).toFixed(1)+'%';};
   var okAll=st.badCov===0&&st.badSign===0&&st.dupRows===0&&(st.nPairs===0||st.nMot===st.nRows);
   var kp=[
-    ['Parejas',st.nPairs,'#344767'],
+    ['Parejas',st.nPairs1,'#344767'],
+    ['Parejas (2)',st.nPairs2,'#b8860b'],
     ['Renglones',st.nRows,'#344767'],
     ['SKUs distintos',st.nSkus,'#344767'],
     ['Cobertura mín.',pc(st.minCov),'#344767'],
@@ -1688,13 +1825,16 @@ function renderCxoPanel(){
   ];
   p.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'
     +'<div style="font-size:12.5px;font-weight:700;color:#8e1538"><i class="ti ti-arrows-exchange" aria-hidden="true" style="margin-right:5px"></i>Un código por otro</div>'
-    +'<div style="font-size:11px;color:#8392ab">Hoja: <b>'+esc(src.sheet)+'</b>'+(src.isDif?'':' (sin hoja DIF, se usó la primera)')+' · '+res.nAn+' renglones con diferencia · '+res.nCands+' candidatas</div></div>'
+    +'<div style="font-size:11px;color:#8392ab">Hoja: <b>'+esc(src.sheet)+'</b>'+(src.isDif?'':' (sin hoja DIF, se usó la primera)')+' · '+res.nAn+' códigos con diferencia (FUENTE 2, de '+src.nOrig+' renglones) · '+res.nCands+' candidatas</div></div>'
     +'<div class="cxo-kpis">'+kp.map(function(k){return '<div class="cxo-kpi"><div class="l">'+k[0]+'</div><div class="v" style="color:'+k[2]+'">'+k[1]+'</div></div>';}).join('')+'</div>'
     +(st.nPairs
       ?'<div class="cxo-chk" style="color:'+(okAll?'#1e8449':'#c0392b')+'">'
-        +(okAll?'✔':'✖')+' Sin duplicados · '+(st.badCov===0?'ninguna pareja con cobertura &lt; 85%':st.badCov+' parejas con cobertura &lt; 85%')
-        +' · todas con faltante y sobrante · '+st.nMot+'/'+st.nRows+' renglones con "'+CXO_MOTIVO+'" · resto sin motivo</div>'
-      :'<div class="cxo-chk" style="color:#c0392b">No se encontraron parejas que cumplan cobertura ≥ 85% y similitud ≥ 50%. El Excel se generó con todos los motivos en blanco.</div>');
+        +(okAll?'✔':'✖')+' Sin duplicados · '+(st.badCov===0?'todas las parejas cumplen su regla (85% / ±65%)':st.badCov+' parejas fuera de regla')
+        +' · todas con faltante y sobrante · '+st.nMot+'/'+st.nRows+' renglones marcados · resto sin motivo</div>'
+        +'<div class="cxo-chk"><span style="background:#ffff00;padding:0 5px;border-radius:3px;color:#5a4a00;font-weight:700">(2)</span> '
+        +st.nPairs2+' parejas extra desgranando la descripción (similitud ≥ 50%, cobertura ±65%) sobre renglones que la regla actual dejó libres · '+res.nCands2+' candidatas</div>'
+        +'<div class="cxo-chk">Mismo código repetido en FUENTE que se compensa entre sus renglones: '+(res.nInt||0)+' con motivo · '+(res.nInt2||0)+' con motivo (2)</div>'
+      :'<div class="cxo-chk" style="color:#c0392b">No se encontraron parejas (ni con la regla actual ni con la pasada (2)). El Excel se generó con todos los motivos en blanco.</div>');
   p.style.display='block';
 }
 
@@ -1703,6 +1843,3 @@ initCalTab();
 
 </body>
 </html>
-
-
-
