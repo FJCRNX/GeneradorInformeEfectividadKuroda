@@ -126,7 +126,7 @@ input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9p
       <i class="ti ti-stack-2" style="color:#b8651b;font-size:22px" aria-hidden="true"></i>
       <div style="flex:1">
         <div style="font-weight:700;margin-bottom:2px">Archivo multi-centro detectado <span class="badge" id="multiCount"></span></div>
-        <div style="color:#8a5a22;font-size:11.5px">Se generarán automáticamente los 3 niveles de Excel y se descargarán en un ZIP.</div>
+        <div style="color:#8a5a22;font-size:11.5px">Se generarán todos los Excel de la app (Global, por Sociedad, por Sucursal, por Meses y Un código por otro) en un ZIP.</div>
       </div>
       <button class="btnd zip" id="btnAllZip">
         <i class="ti ti-file-zip" aria-hidden="true"></i>Generar todo (ZIP)
@@ -155,6 +155,9 @@ input[type="month"]{background:#f8f9fa;border:1px solid #e9ecef;border-radius:9p
         </button>
         <button class="btnd" id="btnPorMeses" style="background:linear-gradient(310deg,#6f2dbd,#a663cc);box-shadow:0 4px 10px rgba(111,45,189,.3)">
           <i class="ti ti-calendar-stats" aria-hidden="true"></i>Generar por Meses
+        </button>
+        <button class="btnd zip" id="btnAllZip2" title="ZIP con todos los Excel: Global, por Sociedad, por Sucursal, por Meses y Un código por otro">
+          <i class="ti ti-file-zip" aria-hidden="true"></i>Descargar todo (ZIP)
         </button>
         <button class="btnd cxo" id="btnCxO" title="Excel por tienda con efectividad, marcando el motivo UN CÓDIGO POR OTRO (cobertura ≥ 85%, similitud ≥ 50%); el resto queda sin motivo">
           <i class="ti ti-arrows-exchange" aria-hidden="true"></i>Un Código por Otro
@@ -235,6 +238,7 @@ var G={rows:[],hdrs:[],m:{},file:'',centro:'GK',suc:'BODE',pg:0,ps:25,q:'',centr
   document.getElementById('btnPerCentro').addEventListener('click',function(){runGen('soc');});
   document.getElementById('btnPerSuc').addEventListener('click',function(){runGen('suc');});
   document.getElementById('btnAllZip').addEventListener('click',function(){runGen('all');});
+  document.getElementById('btnAllZip2').addEventListener('click',function(){runGen('all');});
   document.getElementById('btnPorMeses').addEventListener('click',function(){runGen('meses');});
   document.getElementById('btnCxO').addEventListener('click',function(){runGen('cxo');});
   [0,1,2,3].forEach(function(i){
@@ -465,8 +469,10 @@ function rTablas(){
     +'<div class="glass" style="padding:13px 16px">'
     +'<div class="sec">Diferencia en Valor</div>'
     +[['Valor Cant Contada',money(m.vCnt),'#344767'],['Valor Exist Teórica',money(m.vTeo),'#344767'],
-      ['Importe Total Faltante',money(impT.falt),'#e74c3c'],['Importe Total Sobrante',money(impT.sobr),'#2dce89'],
-      ['Diferencia Neta',money(impT.neto),negC(impT.neto)],
+      ['Diferencia Neta',money(m.vDiff),negC(m.vDiff)],
+    ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')
+    +'<div class="sec" style="margin-top:14px">Importes Netos</div>'
+    +[['Importe Total Faltante',money(impT.falt),'#e74c3c'],['Importe Total Sobrante',money(impT.sobr),'#2dce89'],
     ].map(function(x){return '<div class="mrow"><span class="ml">'+x[0]+'</span><span class="mv" style="color:'+x[2]+'">'+x[1]+'</span></div>';}).join('')+'</div>';
 
   // Mini desglose por centro si es multi
@@ -820,9 +826,17 @@ function buildContextSheets(wb,ctx){
   addSecHdr('DIFERENCIA EN VALOR');
   addKpi('Valor Cant Contada',m.vCnt,'FFF0F7FF','FF1A252F','"$"#,##0.00');
   addKpi('Valor Exist Teórica',m.vTeo,'FFF0F7FF','FF1A252F','"$"#,##0.00');
+  addKpi('Diferencia Neta',m.vDiff,m.vDiff<0?'FFF8D7DA':'FFD4EDDA',m.vDiff<0?'FFC0392B':'FF1E8449','"$"#,##0.00');
+  // 2 renglones de separación con el mismo formato del bloque
+  [0,1].forEach(function(){
+    var rE=wsT.addRow(['','','']);rE.height=20;
+    sc(rE.getCell(1),'FFEAF2FF','FF1A252F',false,null,'left');
+    sc(rE.getCell(3),'FFF0F7FF','FF1A252F',false,null,'right');
+  });
+  // Importes Netos — calculados desde FUENTE 2 (totalizada por código)
+  addSecHdr('Importes Netos');
   addKpi('Importe Total Faltante',imp.falt,'FFFFEAEA','FFC0392B','"$"#,##0.00');
   addKpi('Importe Total Sobrante',imp.sobr,'FFEAFFEA','FF1E8449','"$"#,##0.00');
-  addKpi('Diferencia Neta',imp.neto,imp.neto<0?'FFF8D7DA':'FFD4EDDA',imp.neto<0?'FFC0392B':'FF1E8449','"$"#,##0.00');
   wsT.addRow([]);
 
   // ── EFECTIVIDAD POR ALMACÉN (tabla nueva) — % entero TRUNCADO, sin redondear ──
@@ -1059,7 +1073,7 @@ async function buildZipPorSucursal(){
 
 // ── Orquestador principal ──
 async function runGen(mode){
-  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip','btnPorMeses','btnCxO'];
+  var allBtns=['btnDlUnico','btnDl','btnPerCentro','btnPerSuc','btnAllZip','btnAllZip2','btnPorMeses','btnCxO'];
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=true;});
   var origText={};
   allBtns.forEach(function(id){var b=document.getElementById(id);if(b){origText[id]=b.innerHTML;}});
@@ -1106,23 +1120,23 @@ async function runGen(mode){
       else dlBuf(outC.buf,outC.name,XL_MIME);
     }
     else if(mode==='all'){
-      document.getElementById('btnAllZip').innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';
+      ['btnAllZip','btnAllZip2'].forEach(function(id){document.getElementById(id).innerHTML='<i class="ti ti-loader-2" aria-hidden="true"></i>Generando…';});
       var zip=new JSZip();
 
-      setStatus('1/3 Generando Excel Global…');
+      setStatus('1/5 Generando Excel Global…');
       await new Promise(function(r){setTimeout(r,5);});
       var bufG=await buildExcelGlobal();
       zip.file('1_EfectividadGlobal_'+fecha+'.xlsx',bufG);
 
-      setStatus('2/3 Generando Excel por Sociedad…');
+      setStatus('2/5 Generando Excel por Sociedad…');
       await new Promise(function(r){setTimeout(r,5);});
       var bufS=await buildExcelPorSociedad();
       zip.file('2_EfectividadPorSociedad_'+fecha+'.xlsx',bufS);
 
-      setStatus('3/3 Generando archivos individuales…');
+      setStatus('3/5 Generando archivos individuales…');
       for(var i=0;i<G.centros.length;i++){
         var c=G.centros[i];
-        setStatus('3/3 Procesando '+(i+1)+'/'+G.centros.length+': '+c+' — '+sucName(c));
+        setStatus('3/5 Procesando '+(i+1)+'/'+G.centros.length+': '+c+' — '+sucName(c));
         await new Promise(function(r){setTimeout(r,5);});
         var sub=G.rows.filter(function(r){return String(r['Centro'])===c;});
         var mC=calcM(sub);
@@ -1134,6 +1148,15 @@ async function runGen(mode){
         var folder='3_IndividualPorSucursal/'+socCode(c)+'_'+socName(c).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,30);
         zip.file(folder+'/Efectividad_'+c+'_'+sucNorm+'_'+fecha+'.xlsx',bufI);
       }
+
+      setStatus('4/5 Generando Excel por Meses…');
+      await new Promise(function(r){setTimeout(r,5);});
+      var bufM=await buildExcelPorMeses();
+      zip.file('4_EfectividadPorMeses_'+fecha+'.xlsx',bufM);
+
+      setStatus('5/5 Generando Un código por otro…');
+      await new Promise(function(r){setTimeout(r,5);});
+      await buildExcelCxO(zip.folder('5_UnCodigoPorOtro_PorSucursal'));
 
       setStatus('Comprimiendo ZIP final…');
       var blobAll=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
@@ -1764,7 +1787,7 @@ function cxoApplyMotivo(src,res){
 
 // Excel por tienda (FUENTE / TABLAS / GRUPOS / INSIGHTS con efectividad) usando el motivo CxO.
 // Un solo centro → un .xlsx · varios centros → ZIP con un .xlsx por sucursal
-async function buildExcelCxO(){
+async function buildExcelCxO(zipDestino){
   var src=cxoSource();
   var res=cxoMatch(src);
   var st=cxoStats(res);
@@ -1791,6 +1814,16 @@ async function buildExcelCxO(){
     return wb.xlsx.writeBuffer();
   }
 
+  if(zipDestino){ // dentro del ZIP de "Generar todo": siempre un archivo por sucursal
+    for(var j=0;j<centros.length;j++){
+      var cz=centros[j];
+      setStatus('5/5 Un código por otro '+(j+1)+'/'+centros.length+': '+(cz||G.centro)+' — '+sucName(cz||G.centro));
+      await new Promise(function(r){setTimeout(r,5);});
+      var fz=cz?socCode(cz)+'_'+socName(cz).replace(/[^A-Za-z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,30)+'/':'';
+      zipDestino.file(fz+fname(cz),await wbFor(cz));
+    }
+    return null;
+  }
   if(centros.length===1){
     setStatus('Generando Excel de '+(centros[0]||G.centro)+'…');
     return{zip:false,buf:await wbFor(centros[0]),name:fname(centros[0])};
